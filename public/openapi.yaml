@@ -1,0 +1,268 @@
+openapi: 3.0.0
+info:
+  title: VBIS Inventory API
+  version: "1.0.0"
+  description: API for Inventory History, Material Issuance, and Monitoring
+servers:
+  - url: "http://localhost"
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+        sku:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        quantity:
+          type: integer
+        location:
+          type: string
+        status:
+          type: string
+        qr_code:
+          type: string
+    InventoryTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        item_id:
+          type: integer
+        user_id:
+          type: integer
+        department_id:
+          type: integer
+        transaction_type:
+          type: string
+        quantity:
+          type: integer
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    MaterialIssue:
+      type: object
+      properties:
+        id:
+          type: integer
+        item_id:
+          type: integer
+        issued_to_user_id:
+          type: integer
+        department_id:
+          type: integer
+        quantity:
+          type: integer
+        status:
+          type: string
+        notes:
+          type: string
+        approved_by:
+          type: integer
+        approved_at:
+          type: string
+          format: date-time
+paths:
+  /inventory/transactions:
+    get:
+      tags: [Inventory Transactions]
+      summary: List inventory transactions
+      parameters:
+        - name: item_id
+          in: query
+          schema:
+            type: integer
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+        - name: department_id
+          in: query
+          schema:
+            type: integer
+        - name: transaction_type
+          in: query
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: export
+          in: query
+          schema:
+            type: string
+            enum: [csv]
+      responses:
+        '200':
+          description: A paginated list of transactions
+      security:
+        - bearerAuth: []
+  /inventory/transactions/{id}:
+    get:
+      tags: [Inventory Transactions]
+      summary: Get transaction detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryTransaction'
+      security:
+        - bearerAuth: []
+  /inventory/issues:
+    get:
+      tags: [Material Issues]
+      summary: List material issues
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Material Issues]
+      summary: Create material issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialIssue'
+            example:
+              item_id: 1
+              issued_to_user_id: 2
+              department_id: null
+              quantity: 3
+      responses:
+        '201':
+          description: Created
+      security:
+        - bearerAuth: []
+  /inventory/issues/{id}/approve:
+    post:
+      tags: [Material Issues]
+      summary: Approve material issue
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Approved
+      security:
+        - bearerAuth: []
+  /inventory/issues/{id}/reject:
+    post:
+      tags: [Material Issues]
+      summary: Reject material issue
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+            example:
+              notes: Not allowed
+      responses:
+        '200':
+          description: Rejected
+      security:
+        - bearerAuth: []
+  /inventory/items:
+    get:
+      tags: [Items]
+      summary: List items
+      responses:
+        '200':
+          description: OK
+  /inventory/items/export:
+    get:
+      tags: [Items]
+      summary: Export items
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, excel, pdf]
+      responses:
+        '200':
+          description: Download
+  /inventory/items/{id}:
+    get:
+      tags: [Items]
+      summary: Get item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+  /inventory/items/{id}/qr-image:
+    get:
+      tags: [Items]
+      summary: Get QR image URL
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+*** End Patch
