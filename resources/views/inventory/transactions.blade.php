@@ -17,8 +17,11 @@
         .btn:hover{background:#287f92;border-color:#287f92;transform:translateY(-1px)}
         .btn.secondary{background:#7a8794;border-color:#7a8794}
         .btn.secondary:hover{background:#657789;border-color:#657789}
-        .edit-tx{display:inline-block;padding:8px 12px;border-radius:8px;border:1px solid #123b5d;background:#123b5d;color:#fff;cursor:pointer;box-shadow:0 6px 14px rgba(18,59,93,.12)}
-        .edit-tx:hover{background:#287f92;border-color:#287f92}
+        .action-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+        .action-buttons button{display:inline-flex;align-items:center;justify-content:center;padding:4px 6px;border:1px solid #123b5d;border-radius:6px;background:#123b5d;color:#fff;font-size:10px;line-height:1.2;cursor:pointer;white-space:normal}
+        .action-buttons button:hover{background:#287f92;border-color:#287f92}
+        .action-buttons .return-borrow{border-color:#16794b;background:#16794b}
+        .action-buttons .return-borrow:hover{border-color:#11633d;background:#11633d}
         .filters input, .filters select{padding:8px;border:1px solid #cbdde1;border-radius:7px;background:#fff;color:#17324d}
             #exportCsv{background:#217346;color:#fff}
             #exportCsv:hover{background:#185c37}
@@ -193,9 +196,12 @@
                     actions += `<button class="approve-borrow" data-id="${t.id}">Approve</button> <button class="reject-borrow" data-id="${t.id}">Reject</button>`;
                 }
                 if(canEdit){ actions += `<button class="edit-tx" data-id="${t.id}">Edit condition</button>`; }
+                if((canEdit || canManage) && type === 'borrow' && t.status === 'approved' && !t.returned_at){
+                    actions += `<button class="return-borrow" data-id="${t.id}" data-item-id="${t.item_id}" data-user-id="${t.user_id}" data-quantity="${t.quantity}">Mark as returned</button>`;
+                }
                 const notes = t.status === 'rejected' && t.rejection_reason ? `${t.notes || ''} | Rejection: ${t.rejection_reason}` : (t.notes || '');
                 html += `<tr class="link-row" data-id="${t.id}"><td>${t.id}</td><td>${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td>${typeLabel}</td><td>${t.quantity}</td><td>${escapeHtml(department)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td>${statusCell}</td><td>${escapeHtml(notes)}</td><td>${t.created_at}`;
-                if(canEdit || canManage){ html += `<td>${actions}</td>`; }
+                if(canEdit || canManage){ html += `<td><div class="action-buttons">${actions}</div></td>`; }
                 html += `</tr>`;
             });
             html += '</tbody></table>';
@@ -255,6 +261,27 @@
         }
 
         document.addEventListener('click', async (e)=>{
+            if(e.target.matches('.return-borrow')){
+                e.stopPropagation();
+                const button = e.target;
+                showConfirm('Mark this borrowed item as returned? The returned quantity will be added back to inventory.', async ()=>{
+                    const response = await fetch('/inventory/transactions', {
+                        method:'POST',
+                        headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrfToken},
+                        body:JSON.stringify({
+                            item_id:button.dataset.itemId,
+                            user_id:button.dataset.userId,
+                            transaction_type:'return',
+                            quantity:button.dataset.quantity,
+                            condition:'Good',
+                            notes:'Marked as returned',
+                        }),
+                    });
+                    if(response.ok){ load(); }
+                    else { const result = await response.json().catch(()=>({error:'Return failed'})); alert(result.error || 'Return failed'); }
+                });
+            }
+
             if(e.target.matches('.edit-tx')){
                 e.stopPropagation();
                 const id = e.target.getAttribute('data-id');
