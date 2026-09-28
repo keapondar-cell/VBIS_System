@@ -264,7 +264,14 @@
             if(e.target.matches('.return-borrow')){
                 e.stopPropagation();
                 const button = e.target;
-                showConfirm('Mark this borrowed item as returned? The returned quantity will be added back to inventory.', async ()=>{
+                const condition = prompt('Returned condition: Good, Damaged, Lost, or For Repair', 'Good');
+                if(condition === null) return;
+                const allowedConditions = ['Good', 'Damaged', 'Lost', 'For Repair'];
+                if(!allowedConditions.includes(condition.trim())){
+                    alert('Choose Good, Damaged, Lost, or For Repair.');
+                    return;
+                }
+                showConfirm(`Mark this borrowed item as returned in ${condition.trim()} condition? Inventory stock is restored only for items in Good condition.`, async ()=>{
                     const response = await fetch('/inventory/transactions', {
                         method:'POST',
                         headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrfToken},
@@ -273,7 +280,7 @@
                             user_id:button.dataset.userId,
                             transaction_type:'return',
                             quantity:button.dataset.quantity,
-                            condition:'Good',
+                            condition:condition.trim(),
                             notes:'Marked as returned',
                         }),
                     });
