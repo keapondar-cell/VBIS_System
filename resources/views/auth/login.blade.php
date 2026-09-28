@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <div class="min-h-screen bg-white px-5 py-10 sm:px-8">
+    <div class="px-5 py-10 sm:px-8">
         <div class="mx-auto w-full max-w-md">
             <header class="mb-8 text-center">
                 <h1 class="text-3xl font-bold tracking-tight text-gray-900">Welcome back</h1>
