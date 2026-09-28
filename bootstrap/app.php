@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->trustProxies(at: '*');
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('reports:generate')->dailyAt('17:00');
