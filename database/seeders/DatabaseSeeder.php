@@ -26,6 +26,8 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        $this->call(InventoryItemsSeeder::class);
     }
 }
 
