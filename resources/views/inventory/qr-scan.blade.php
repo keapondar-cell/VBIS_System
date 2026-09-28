@@ -92,7 +92,7 @@
         startCamera.addEventListener('click', async function () {
             try {
                 if (!window.Html5Qrcode) throw new Error('QR decoder unavailable');
-                const scanner = new Html5Qrcode('video');
+                const scanner = new Html5Qrcode('qr-reader');
                 window.inventoryQrScanner = scanner;
                 await scanner.start(
                     { facingMode: 'environment' },
