@@ -211,5 +211,5 @@
 		.dashboard-hero { padding: 1.35rem; border-radius: 18px; }
 		.legacy-module-page { padding: 1rem .75rem; }
 	}
-	@media (max-width: 1023px) { .school-sidebar { position:sticky; display:block; width:100%; min-height:auto; height:64px; padding:.7rem 1rem; } .school-sidebar-brand{padding:0;border:0}.school-sidebar-brand .school-brand-mark{width:38px;height:38px}.school-sidebar-section,.school-sidebar-links,.school-sidebar-bottom{display:none}.school-mobile-top{display:block;position:absolute;right:1rem;top:1.15rem;z-index:60} }
+	@media (max-width: 1023px) { .school-sidebar { position:sticky; display:block; width:100%; min-height:auto; height:64px; padding:.7rem 1rem; } .school-sidebar-brand{padding:0;border:0}.school-sidebar-brand .school-brand-mark{width:38px;height:38px}.school-sidebar-section,.school-sidebar-links,.school-sidebar-bottom{display:none}.school-mobile-top{display:block;position:absolute;right:1rem;top:1.15rem;z-index:60}.school-mobile-menu{position:fixed;top:4.25rem;left:.75rem;right:.75rem;z-index:1000;max-height:calc(100vh - 5rem);overflow-y:auto} }
 }
