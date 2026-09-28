@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Item;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -43,6 +44,23 @@ class AuthenticationTest extends TestCase
         ]);
 
         $response->assertRedirect(route('inventory.dashboard', absolute: false));
+    }
+
+    public function test_login_returns_to_the_item_page_opened_from_a_qr_code(): void
+    {
+        $user = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create();
+        $itemUrl = route('inventory.qr.item', ['id' => $item->id], false);
+
+        $this->get($itemUrl)->assertRedirect(route('login'));
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+            'role' => 'teacher',
+        ]);
+
+        $response->assertRedirect($itemUrl);
     }
 
     public function test_users_can_only_authenticate_from_their_own_role_tab(): void

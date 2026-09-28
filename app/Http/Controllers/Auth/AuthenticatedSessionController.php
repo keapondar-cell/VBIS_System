@@ -28,6 +28,12 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $intendedPath = parse_url($request->session()->pull('url.intended', ''), PHP_URL_PATH);
+
+        if (is_string($intendedPath) && preg_match('#^/inventory/qr/item/(\d+)/?$#', $intendedPath, $matches)) {
+            return redirect()->to(route('inventory.qr.item', ['id' => $matches[1]], false));
+        }
+
         return redirect()->route('inventory.dashboard');
     }
 
