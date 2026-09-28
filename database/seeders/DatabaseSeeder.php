@@ -27,7 +27,10 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $this->call(InventoryItemsSeeder::class);
+        $this->call([
+            DepartmentSeeder::class,
+            InventoryItemsSeeder::class,
+        ]);
     }
 }
 
