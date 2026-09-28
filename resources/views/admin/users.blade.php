@@ -106,7 +106,7 @@
                                     {{ $user->is_active ? 'Active' : 'Pending approval' }}
                                 </span>
                             </td>
-                            <td>{{ $user->created_at->format('M d, Y') }}</td>
+                            <td>{{ $user->created_at?->format('M d, Y') ?? 'N/A' }}</td>
                             <td>
                                 <div class="actions">
                                     <a href="{{ route('admin.users.edit', $user->id) }}" class="btn secondary">Edit</a>
