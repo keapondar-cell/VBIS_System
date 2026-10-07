@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\InventoryTransaction;
 use App\Models\User;
 use App\Notifications\InventoryTransactionNotification;
@@ -66,7 +67,7 @@ class InventoryHistoryController extends Controller
 
             $response = new StreamedResponse(function () use ($items) {
                 $handle = fopen('php://output', 'w');
-                fputcsv($handle, ['id', 'item_id', 'item_name', 'user_id', 'user_name', 'department_id', 'department', 'transaction_type', 'quantity', 'notes', 'expected_return_at', 'returned_at', 'created_at']);
+                fputcsv($handle, ['id', 'item_id', 'item_name', 'user_id', 'user_name', 'department_id', 'department', 'transaction_type', 'quantity', 'notes', 'requested_for_at', 'expected_return_at', 'returned_at', 'created_at']);
 
                 foreach ($items as $t) {
                     fputcsv($handle, [
@@ -80,6 +81,7 @@ class InventoryHistoryController extends Controller
                         $t->transaction_type,
                         $t->quantity,
                         $t->notes,
+                        $t->requested_for_at,
                         $t->expected_return_at,
                         $t->returned_at,
                         $t->created_at,
@@ -127,9 +129,10 @@ class InventoryHistoryController extends Controller
         $data = $request->validate([
             'item_id' => 'required|integer|exists:items,id',
             'user_id' => 'nullable|integer|exists:users,id',
-            'department_id' => 'nullable|integer',
+            'department_id' => 'nullable|integer|exists:departments,id',
             'transaction_type' => 'required|string',
             'quantity' => 'required|integer|min:1',
+            'requested_for_at' => 'nullable|date',
             'purpose' => 'nullable|string|min:5|max:500',
             'notes' => 'nullable|string',
             'condition' => 'nullable|string|in:Good,Damaged,Lost,For Repair',
@@ -284,7 +287,10 @@ class InventoryHistoryController extends Controller
     // UI view for transactions list
     public function transactionsView()
     {
-        return view('inventory.transactions');
+        return view('inventory.transactions', [
+            'users' => User::orderBy('name')->get(),
+            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+        ]);
     }
 
     public function update(Request $request, $id)

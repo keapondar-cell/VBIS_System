@@ -17,7 +17,7 @@ class MaterialIssuanceController extends Controller
 {
     public function index()
     {
-        $query = MaterialIssue::with(['item', 'issuedTo'])->latest();
+        $query = MaterialIssue::with(['item', 'issuedTo', 'department'])->latest();
         if (auth()->user()?->isTeacher()) {
             $query->where('issued_to_user_id', auth()->id());
         }
@@ -28,7 +28,7 @@ class MaterialIssuanceController extends Controller
 
     public function show($id)
     {
-        $issue = MaterialIssue::with(['item', 'issuedTo'])->findOrFail($id);
+        $issue = MaterialIssue::with(['item', 'issuedTo', 'department'])->findOrFail($id);
         return response()->json($issue);
     }
 
@@ -44,7 +44,8 @@ class MaterialIssuanceController extends Controller
         $data = $request->validate([
             'item_id' => 'required|integer|exists:items,id',
             'issued_to_user_id' => 'nullable', // may be numeric id or username/email
-            'department_id' => 'nullable|integer',
+            'department_id' => 'nullable|integer|exists:departments,id',
+            'requested_for_at' => 'nullable|date',
             'quantity' => 'required|integer|min:1',
             'purpose' => 'required|string|min:5|max:500',
         ]);
@@ -216,12 +217,14 @@ class MaterialIssuanceController extends Controller
             'quantity' => 'required|integer|min:1',
             'purpose' => 'required|string|min:5|max:500',
             'department_id' => 'nullable|integer|exists:departments,id',
+            'requested_for_at' => 'nullable|date',
         ]);
 
         $issue->update([
             'item_id' => $data['item_id'],
             'quantity' => $data['quantity'],
             'department_id' => $data['department_id'] ?? null,
+            'requested_for_at' => $data['requested_for_at'] ?? null,
             'notes' => $data['purpose'],
         ]);
 

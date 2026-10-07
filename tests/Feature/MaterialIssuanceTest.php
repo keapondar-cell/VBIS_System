@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Item;
+use App\Models\Department;
 use App\Models\MaterialIssue;
+use App\Models\InventoryTransaction;
 use App\Models\User;
 use App\Notifications\IssueApprovedNotification;
 
@@ -62,7 +64,60 @@ class MaterialIssuanceTest extends TestCase
             ->get('/inventory/issues/list')
             ->assertOk()
             ->assertSee('Borrow')
-            ->assertSee('Material Issue');
+            ->assertSee('Material Issue')
+            ->assertSee('Computer Lab')
+            ->assertSee('Science Lab')
+            ->assertSee('Library')
+            ->assertSee('Teachers')
+            ->assertSee('Requested date & time')
+            ->assertSee('type="datetime-local"', false);
+    }
+
+    public function test_teacher_can_request_item_for_department_and_requested_time(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create();
+        $department = Department::where('name', 'Computer Lab')->firstOrFail();
+        $requestedFor = now()->addDays(2)->setTime(14, 30)->format('Y-m-d\TH:i');
+
+        $response = $this->actingAs($teacher)->postJson('/inventory/issues', [
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'purpose' => 'For scheduled class use',
+            'department_id' => $department->id,
+            'requested_for_at' => $requestedFor,
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('material_issues', [
+            'id' => $response->json('id'),
+            'department_id' => $department->id,
+            'requested_for_at' => str_replace('T', ' ', $requestedFor).':00',
+        ]);
+    }
+
+    public function test_teacher_can_set_department_and_requested_time_for_borrow(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create();
+        $department = Department::where('name', 'Library')->firstOrFail();
+        $requestedFor = now()->addDays(2)->setTime(9, 15)->format('Y-m-d\TH:i');
+
+        $response = $this->actingAs($teacher)->postJson('/inventory/transactions', [
+            'item_id' => $item->id,
+            'transaction_type' => 'borrow',
+            'quantity' => 1,
+            'purpose' => 'For scheduled reading activity',
+            'department_id' => $department->id,
+            'requested_for_at' => $requestedFor,
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('inventory_transactions', [
+            'id' => $response->json('id'),
+            'department_id' => $department->id,
+            'requested_for_at' => str_replace('T', ' ', $requestedFor).':00',
+        ]);
     }
 
     public function test_create_pending_issue_and_approve()

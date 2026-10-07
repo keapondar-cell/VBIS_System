@@ -2,7 +2,7 @@
     <div class="px-5 py-10 sm:px-8">
         <div class="mx-auto w-full max-w-md">
             <header class="mb-8 text-center">
-                <h1 class="text-3xl font-bold tracking-tight text-gray-900">Welcome back</h1>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900">Welcome</h1>
                 <p class="mt-2 text-sm text-gray-600">Sign in with your account credentials.</p>
             </header>
 

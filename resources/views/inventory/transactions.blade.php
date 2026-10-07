@@ -50,8 +50,8 @@
         <div class="card">
             <div class="filters" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                 <label class="muted">Item ID <input id="f_item" type="text" placeholder="item id"></label>
-                <label class="muted">User ID <input id="f_user" type="text" placeholder="user id"></label>
-                <label class="muted">Department <input id="f_dept" type="text" placeholder="department"></label>
+                <label class="muted">User <input id="f_user" type="text" placeholder="user name"></label>
+                <label class="muted">Department <input id="f_dept" type="text" placeholder="department name"></label>
                 <label class="muted">Type
                     <select id="f_type">
                         <option value="">Any</option>
@@ -132,8 +132,22 @@
                     <label>Quantity <input id="c_quantity" name="quantity" type="number" min="1" value="1" required></label>
                     <label>Purpose <input id="c_purpose" name="purpose" placeholder="Specify the reason for borrowing" required></label>
                     <label>Expected Return <input id="c_expected_return_at" name="expected_return_at" type="datetime-local"></label>
-                    <label>User ID <input id="c_user_id" name="user_id"></label>
-                    <label>Department ID <input id="c_department_id" name="department_id"></label>
+                    <label>User
+                        <select id="c_user_id" name="user_id">
+                            <option value="">Select user</option>
+                            @foreach($users ?? [] as $user)
+                                <option value="{{ $user->id }}">{{ $user->name }}{{ $user->email ? ' — '.$user->email : '' }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>Department
+                        <select id="c_department_id" name="department_id">
+                            <option value="">Select department</option>
+                            @foreach($departments ?? [] as $department)
+                                <option value="{{ $department->id }}">{{ $department->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
                     <label>Notes <input id="c_notes" name="notes"></label>
                     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
                         <button type="submit" class="btn">Create</button>
@@ -181,7 +195,7 @@
             const list = data.data || data;
             if(!list || list.length===0){ resultsEl.innerHTML = '<div class="muted">No transactions found.</div>'; return; }
 
-            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
+            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Requested date &amp; time</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
             const canEdit = @json(auth()->user()?->isTeacher() ?? false);
             const canManage = @json(auth()->user()?->isAdmin() || auth()->user()?->isPropertyCustodian());
             if(canEdit || canManage) html += '<th>Actions</th>';
@@ -190,6 +204,7 @@
                 const type = (t.transaction_type||'').toLowerCase();
                 const typeLabel = type === 'adjustment' ? `<span style="background:#f59e0b;color:#fff;padding:4px 6px;border-radius:4px">Adjustment</span>` : `<span style="background:#0b61d8;color:#fff;padding:4px 6px;border-radius:4px">${escapeHtml(t.transaction_type)}</span>`;
                 const department = t.department && t.department.name ? t.department.name : (t.department_id ? 'Department '+t.department_id : '');
+                const requestedFor = t.requested_for_at ? new Date(t.requested_for_at).toLocaleString() : 'N/A';
                 let statusCell = escapeHtml(t.status || 'N/A');
                 let actions = '';
                 if (canManage && type === 'borrow' && t.status === 'pending') {
@@ -200,7 +215,7 @@
                     actions += `<button class="return-borrow" data-id="${t.id}" data-item-id="${t.item_id}" data-user-id="${t.user_id}" data-quantity="${t.quantity}">Mark as returned</button>`;
                 }
                 const notes = t.status === 'rejected' && t.rejection_reason ? `${t.notes || ''} | Rejection: ${t.rejection_reason}` : (t.notes || '');
-                html += `<tr class="link-row" data-id="${t.id}"><td>${t.id}</td><td>${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td>${typeLabel}</td><td>${t.quantity}</td><td>${escapeHtml(department)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td>${statusCell}</td><td>${escapeHtml(notes)}</td><td>${t.created_at}`;
+                html += `<tr class="link-row" data-id="${t.id}"><td>${t.id}</td><td>${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td>${typeLabel}</td><td>${t.quantity}</td><td>${escapeHtml(department)}</td><td>${escapeHtml(requestedFor)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td>${statusCell}</td><td>${escapeHtml(notes)}</td><td>${t.created_at}`;
                 if(canEdit || canManage){ html += `<td><div class="action-buttons">${actions}</div></td>`; }
                 html += `</tr>`;
             });
@@ -250,6 +265,7 @@
             html += `<div><strong>Type:</strong> ${escapeHtml(t.transaction_type)} ${t.transaction_type === 'adjustment' ? '<em style="color:#b45309;margin-left:8px">(manual adjustment)</em>' : ''}</div>`;
             html += `<div><strong>Quantity:</strong> ${t.quantity}</div>`;
             html += `<div><strong>Department:</strong> ${escapeHtml(t.department && t.department.name ? t.department.name : (t.department_id || 'N/A'))}</div>`;
+            html += `<div><strong>Requested date &amp; time:</strong> ${escapeHtml(t.requested_for_at ? new Date(t.requested_for_at).toLocaleString() : 'N/A')}</div>`;
             html += `<div><strong>Expected return:</strong> ${escapeHtml(t.expected_return_at||'N/A')}</div>`;
             html += `<div><strong>Returned:</strong> ${escapeHtml(t.returned_at||'N/A')}</div>`;
             html += `<div><strong>Condition:</strong> ${escapeHtml(t.condition||'Not recorded')}</div>`;

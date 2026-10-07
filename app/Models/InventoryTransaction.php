@@ -11,7 +11,7 @@ class InventoryTransaction extends Model
 
     protected $fillable = [
         'item_id', 'user_id', 'department_id', 'transaction_type', 'quantity', 'quantity_change',
-        'old_quantity', 'new_quantity', 'notes', 'rejection_reason', 'related_transaction_id', 'expected_return_at',
+        'old_quantity', 'new_quantity', 'notes', 'rejection_reason', 'related_transaction_id', 'requested_for_at', 'expected_return_at',
         'returned_at', 'status', 'condition', 'performed_by', 'affected_user_id', 'reason',
         'remarks', 'reference_number', 'returned_by'
     ];
@@ -45,6 +45,7 @@ class InventoryTransaction extends Model
     {
         return [
             'expected_return_at' => 'datetime',
+            'requested_for_at' => 'datetime',
             'returned_at' => 'datetime',
         ];
     }

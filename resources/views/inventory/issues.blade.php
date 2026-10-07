@@ -1,6 +1,6 @@
 ﻿<x-app-layout>
     <style>
-        body{font-family:Figtree,Arial,sans-serif;margin:0;background:#f4f8f8;color:#17324d}.page{max-width:1400px;margin:0 auto;padding:32px 24px}.page-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:24px}.eyebrow{color:#d99b2b;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.page h1{margin:4px 0;font-size:30px}.page-subtitle{color:#657789;margin:0}.surface{background:#fff;border:1px solid #d8e5e8;border-radius:16px;box-shadow:0 12px 30px rgba(18,59,93,.06);padding:20px;margin-bottom:20px}.surface h3{margin:0 0 14px}.form-grid{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.form-grid input,.form-grid select,.edit-form input,.edit-form select{padding:10px;border:1px solid #cbdde1;border-radius:8px;background:#fff;color:#17324d}.form-grid input[type=text]{min-width:220px}.btn{border:0;border-radius:8px;padding:10px 14px;background:#123b5d;color:#fff;cursor:pointer;font-weight:700}.btn:hover{background:#1d687d}.btn.secondary{background:#edf6f5;color:#123b5d}.btn.warning{background:#fef3c7;color:#92400e}.btn.danger{background:#fee2e2;color:#991b1b}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:780px}th,td{padding:12px;text-align:left;border-bottom:1px solid #e5eef0}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#657789;background:#f7fbfb}tr:hover{background:#fbfefe}.status{display:inline-block;padding:4px 9px;border-radius:999px;font-size:12px;font-weight:800;text-transform:capitalize}.status.pending{background:#fef3c7;color:#92400e}.status.approved{background:#dcfce7;color:#166534}.status.rejected{background:#fee2e2;color:#991b1b}.actions{display:flex;gap:6px;flex-wrap:wrap}.modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(7,25,44,.65);align-items:center;justify-content:center}.modal-box{background:#fff;border-radius:14px;padding:22px;width:min(460px,90%);box-shadow:0 20px 50px rgba(0,0,0,.2)}.edit-form{display:grid;gap:12px}
+        body{font-family:Figtree,Arial,sans-serif;margin:0;background:#f4f8f8;color:#17324d}.page{max-width:1400px;margin:0 auto;padding:32px 24px}.page-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:24px}.eyebrow{color:#d99b2b;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.page h1{margin:4px 0;font-size:30px}.page-subtitle{color:#657789;margin:0}.surface{background:#fff;border:1px solid #d8e5e8;border-radius:16px;box-shadow:0 12px 30px rgba(18,59,93,.06);padding:20px;margin-bottom:20px}.surface h3{margin:0 0 14px}.form-grid{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.form-grid input,.form-grid select,.edit-form input,.edit-form select{padding:10px;border:1px solid #cbdde1;border-radius:8px;background:#fff;color:#17324d}.form-grid input[type=text]{min-width:220px}.btn{border:0;border-radius:8px;padding:10px 14px;background:#123b5d;color:#fff;cursor:pointer;font-weight:700}.btn:hover{background:#1d687d}.btn.secondary{background:#edf6f5;color:#123b5d}.btn.warning{background:#fef3c7;color:#92400e}.btn.danger{background:#fee2e2;color:#991b1b}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:780px}th,td{padding:12px;text-align:left;border-bottom:1px solid #e5eef0}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#657789;background:#f7fbfb}tr:hover{background:#fbfefe}.status{display:inline-block;padding:4px 9px;border-radius:999px;font-size:12px;font-weight:800;text-transform:capitalize}.status.pending{background:#fef3c7;color:#92400e}.status.approved{background:#dcfce7;color:#166534}.status.rejected{background:#fee2e2;color:#991b1b}.actions{display:flex;gap:6px;flex-wrap:wrap}.modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(7,25,44,.65);align-items:center;justify-content:center}.modal-box{background:#fff;border-radius:14px;padding:22px;width:min(460px,90%);box-shadow:0 20px 50px rgba(0,0,0,.2)}.edit-form{display:grid;gap:12px}
         body { background: radial-gradient(circle at 100% 0, rgba(47,154,145,.12), transparent 28rem), linear-gradient(135deg, #f4f8f8 0%, #e8f1f2 100%); }
         .page { max-width: 1400px; }
         .page h1 { color: #123b5d; letter-spacing: .01em; }
@@ -39,9 +39,9 @@
                         <option value="borrow">Borrow</option>
                     </select>
                     <input id="ci_purpose" type="text" placeholder="Purpose / reason for request" required style="min-width:260px;padding:6px">
-                    <div id="ci_borrowed_date_group" style="display:none;">
-                        <label for="ci_borrowed_date" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">Date Borrowed</label>
-                        <input id="ci_borrowed_date" type="date" style="width:170px;padding:6px" aria-label="Date borrowed">
+                    <div>
+                        <label for="ci_requested_for_at" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">Requested date &amp; time</label>
+                        <input id="ci_requested_for_at" type="datetime-local" required style="width:220px;padding:6px" aria-label="Requested date and time">
                     </div>
                     <div id="ci_return_date_group" style="display:none;">
                         <label for="ci_return_date" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">Return Date</label>
@@ -49,7 +49,7 @@
                     </div>
                     <input id="ci_user" type="text" placeholder="User ID or name (optional)" style="width:160px;padding:6px">
                     <select id="ci_dept" style="width:180px;padding:6px">
-                        <option value="">No department</option>
+                        <option value="">Select department</option>
                         @foreach($departments ?? [] as $department)
                             <option value="{{ $department->id }}">{{ $department->name }}</option>
                         @endforeach
@@ -77,7 +77,8 @@
                 <label>Item<input id="edit_item_id" type="number" min="1" required></label>
                 <label>Quantity<input id="edit_quantity" type="number" min="1" required></label>
                 <label>Purpose<input id="edit_purpose" type="text" minlength="5" required></label>
-                <label>Department<select id="edit_department"><option value="">No department</option>@foreach($departments ?? [] as $department)<option value="{{ $department->id }}">{{ $department->name }}</option>@endforeach</select></label>
+                <label>Department<select id="edit_department"><option value="">Select department</option>@foreach($departments ?? [] as $department)<option value="{{ $department->id }}">{{ $department->name }}</option>@endforeach</select></label>
+                <label>Requested date &amp; time<input id="edit_requested_for_at" type="datetime-local" required></label>
                 <div class="actions">
                     <button type="submit" class="btn">Save changes</button>
                     <button type="button" class="btn secondary" onclick="closeEditIssue()">Cancel</button>
@@ -92,22 +93,24 @@
         const currentUserId = @json(auth()->check() ? auth()->id() : null);
         const csrf = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : null;
 
-        function escapeHtml(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function escapeHtml(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
         async function load(){
             const res = await fetch('/inventory/issues');
             const data = await res.json();
             const list = data.data || data;
             if(!list || list.length===0){ document.getElementById('content').textContent = 'No issues.'; return; }
-            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>Qty</th><th>Purpose</th><th>Requested By</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>Qty</th><th>Purpose</th><th>Requested By</th><th>Department</th><th>Requested date &amp; time</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
             list.forEach(i=>{
                 const rel = i.issuedTo || i.issued_to;
                 const issuer = (rel && rel.name) ? rel.name : (i.issued_to_user_id || '');
                 const avatar = (rel && rel.avatar) ? rel.avatar : '';
                 const purpose = i.status === 'rejected' && i.rejection_reason ? `${i.notes || 'No purpose specified'} | Rejection: ${i.rejection_reason}` : (i.notes || 'No purpose specified');
                 const itemName = i.item ? escapeHtml(i.item.name) : i.item_id;
-                html += `<tr><td>${i.id}</td><td>${itemName}</td><td>${i.quantity}</td><td>${escapeHtml(purpose)}</td><td>${avatar ? `<img src="${avatar}" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;vertical-align:middle">` : ''}${escapeHtml(issuer)}</td><td><span class="status ${i.status}">${escapeHtml(i.status)}</span></td><td>${i.created_at}</td><td class="actions">`;
-                if(i.status === 'pending' && currentUserId === i.issued_to_user_id && !canApprove){ html += `<button class="btn warning" onclick="openEditIssue(${i.id},${i.item_id},${i.quantity},'${escapeHtml(purpose).replace(/'/g, "\\'")}',${i.department_id || 'null'})">Edit</button>`; }
+                const departmentName = i.department ? escapeHtml(i.department.name) : 'Not selected';
+                const requestedFor = i.requested_for_at ? escapeHtml(new Date(i.requested_for_at).toLocaleString()) : 'Not scheduled';
+                html += `<tr><td>${i.id}</td><td>${itemName}</td><td>${i.quantity}</td><td>${escapeHtml(purpose)}</td><td>${avatar ? `<img src="${escapeHtml(avatar)}" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;vertical-align:middle">` : ''}${escapeHtml(issuer)}</td><td>${departmentName}</td><td>${requestedFor}</td><td><span class="status ${escapeHtml(i.status)}">${escapeHtml(i.status)}</span></td><td>${escapeHtml(i.created_at)}</td><td class="actions">`;
+                if(i.status === 'pending' && currentUserId === i.issued_to_user_id && !canApprove){ html += `<button class="btn warning edit-issue-button" data-id="${i.id}" data-item-id="${i.item_id}" data-quantity="${i.quantity}" data-purpose="${escapeHtml(i.notes || '')}" data-department-id="${i.department_id || ''}" data-requested-for-at="${escapeHtml(i.requested_for_at || '')}">Edit</button>`; }
                 if(i.status==='pending'){
                     if(canApprove){ html += ` <button class="btn" onclick="approveIssue(${i.id})">Approve</button> <button class="btn danger" onclick="rejectIssue(${i.id})">Reject</button>`; }
                 }
@@ -126,6 +129,11 @@
             }
         }
         load();
+        document.getElementById('content').addEventListener('click', (event)=>{
+            const button = event.target.closest('.edit-issue-button');
+            if(!button) return;
+            openEditIssue(button.dataset.id, button.dataset.itemId, button.dataset.quantity, button.dataset.purpose, button.dataset.departmentId, button.dataset.requestedForAt);
+        });
     </script>
 
     <script>
@@ -141,11 +149,17 @@
         const sugBox = document.getElementById('ci_suggestions');
         const searchInput = document.getElementById('ci_item_search');
         const requestTypeSelect = document.getElementById('ci_request_type');
-        const borrowedDateGroup = document.getElementById('ci_borrowed_date_group');
         const returnDateGroup = document.getElementById('ci_return_date_group');
-        const borrowedDateInput = document.getElementById('ci_borrowed_date');
+        const requestedForInput = document.getElementById('ci_requested_for_at');
         const returnDateInput = document.getElementById('ci_return_date');
         const createIssueForm = document.getElementById('createIssueForm');
+
+        function setRequestedForDefault(input){
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            input.value = now.toISOString().slice(0, 16);
+        }
+        if (requestedForInput) setRequestedForDefault(requestedForInput);
 
         if (searchInput && sugBox) {
             async function renderSuggestions(q){
@@ -160,13 +174,11 @@
             document.addEventListener('click', (ev)=>{ if(!ev.target.closest('#ci_suggestions') && ev.target !== searchInput) sugBox.style.display='none'; });
         }
 
-        if (requestTypeSelect && borrowedDateGroup && returnDateGroup && borrowedDateInput && returnDateInput) {
+        if (requestTypeSelect && returnDateGroup && returnDateInput) {
             function toggleBorrowFields() {
                 const isBorrow = (requestTypeSelect.value || 'issue') === 'borrow';
-                borrowedDateGroup.style.display = isBorrow ? 'block' : 'none';
                 returnDateGroup.style.display = isBorrow ? 'block' : 'none';
                 if (!isBorrow) {
-                    borrowedDateInput.value = '';
                     returnDateInput.value = '';
                 }
             }
@@ -183,12 +195,13 @@
                 const purpose = (document.getElementById('ci_purpose').value || '').trim();
                 const requestType = document.getElementById('ci_request_type').value || 'issue';
                 const itemId = Number(document.getElementById('ci_item').value || 0);
-                const borrowedDate = document.getElementById('ci_borrowed_date').value || null;
+                const requestedForAt = requestedForInput.value || null;
                 const returnDate = document.getElementById('ci_return_date').value || null;
 
                 if(!itemId){ document.getElementById('createMsg').textContent='Please select an item from suggestions.'; return; }
                 if(!purpose){ document.getElementById('createMsg').textContent='Please specify the purpose for this request.'; return; }
-                if(requestType === 'borrow' && !borrowedDate){ document.getElementById('createMsg').textContent='Please choose the date borrowed.'; return; }
+                if(!deptId){ document.getElementById('createMsg').textContent='Please select your department.'; return; }
+                if(!requestedForAt){ document.getElementById('createMsg').textContent='Please choose the requested date and time.'; return; }
                 if(requestType === 'borrow' && !returnDate){ document.getElementById('createMsg').textContent='Please choose the date to be returned.'; return; }
 
                 const payload = {
@@ -196,6 +209,7 @@
                     quantity: Number(document.getElementById('ci_qty').value || 1),
                     purpose,
                     department_id: deptId,
+                    requested_for_at: requestedForAt,
                     issued_to_user_id: document.getElementById('ci_user').value || null,
                 };
 
@@ -210,6 +224,7 @@
                         transaction_type: 'borrow',
                         user_id: currentUserId,
                         notes: purpose,
+                        requested_for_at: requestedForAt,
                         expected_return_at: returnDate,
                     });
                     delete payload.issued_to_user_id;
@@ -226,6 +241,7 @@
                     const j = await res.json().catch(()=>null);
                     document.getElementById('createMsg').textContent = requestType === 'borrow' ? successText : (j && j.over_requested ? 'Requested, but exceeds available stock.' : successText);
                     document.getElementById('createIssueForm').reset();
+                    setRequestedForDefault(requestedForInput);
                     if (typeof toggleBorrowFields === 'function') {
                         toggleBorrowFields();
                     }
@@ -241,8 +257,9 @@
         async function approveIssue(id){ if(!confirm('Approve issue #'+id+'?')) return; const res = await fetch('/inventory/issues/'+id+'/approve', { method:'POST', headers:{'Accept':'application/json','X-CSRF-TOKEN':csrf} }); const j = await res.json().catch(()=>({error:'error'})); if(res.ok) load(); else alert(j.error||JSON.stringify(j)); }
         async function rejectIssue(id){ const reason = prompt('Why are you rejecting issue #'+id+'?'); if(reason === null || !reason.trim()) return; const res = await fetch('/inventory/issues/'+id+'/reject', { method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify({reason:reason.trim()}) }); const j = await res.json().catch(()=>({error:'error'})); if(res.ok) load(); else alert(j.error||JSON.stringify(j)); }
 
-        function openEditIssue(id, itemId, quantity, purpose, departmentId){ document.getElementById('edit_issue_id').value=id; document.getElementById('edit_item_id').value=itemId; document.getElementById('edit_quantity').value=quantity; document.getElementById('edit_purpose').value=purpose; document.getElementById('edit_department').value=departmentId || ''; document.getElementById('editIssueModal').style.display='flex'; }
+        function toDateTimeLocal(value){ if(!value) return ''; const date=new Date(value); if(Number.isNaN(date.getTime())) return ''; date.setMinutes(date.getMinutes()-date.getTimezoneOffset()); return date.toISOString().slice(0,16); }
+        function openEditIssue(id, itemId, quantity, purpose, departmentId, requestedForAt){ document.getElementById('edit_issue_id').value=id; document.getElementById('edit_item_id').value=itemId; document.getElementById('edit_quantity').value=quantity; document.getElementById('edit_purpose').value=purpose; document.getElementById('edit_department').value=departmentId || ''; document.getElementById('edit_requested_for_at').value=toDateTimeLocal(requestedForAt); document.getElementById('editIssueModal').style.display='flex'; }
         function closeEditIssue(){ document.getElementById('editIssueModal').style.display='none'; document.getElementById('editIssueMsg').textContent=''; }
-        document.getElementById('editIssueForm').addEventListener('submit', async (event)=>{ event.preventDefault(); const id=document.getElementById('edit_issue_id').value; const payload={item_id:Number(document.getElementById('edit_item_id').value),quantity:Number(document.getElementById('edit_quantity').value),purpose:document.getElementById('edit_purpose').value,department_id:document.getElementById('edit_department').value || null}; const res=await fetch('/inventory/issues/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf},body:JSON.stringify(payload)}); if(res.ok){closeEditIssue();load();}else{document.getElementById('editIssueMsg').textContent='Unable to update this request.';} });
+        document.getElementById('editIssueForm').addEventListener('submit', async (event)=>{ event.preventDefault(); const id=document.getElementById('edit_issue_id').value; const payload={item_id:Number(document.getElementById('edit_item_id').value),quantity:Number(document.getElementById('edit_quantity').value),purpose:document.getElementById('edit_purpose').value,department_id:document.getElementById('edit_department').value || null,requested_for_at:document.getElementById('edit_requested_for_at').value || null}; const res=await fetch('/inventory/issues/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf},body:JSON.stringify(payload)}); if(res.ok){closeEditIssue();load();}else{document.getElementById('editIssueMsg').textContent='Unable to update this request.';} });
     </script>
 </x-app-layout>
