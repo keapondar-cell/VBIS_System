@@ -68,7 +68,8 @@ class MaterialIssuanceTest extends TestCase
             ->assertSee('Computer Lab')
             ->assertSee('Science Lab')
             ->assertSee('Library')
-            ->assertSee('Teachers')
+            ->assertSee('JHS Department')
+            ->assertSee('SHS Department')
             ->assertSee('Requested date & time')
             ->assertSee('type="datetime-local"', false);
     }

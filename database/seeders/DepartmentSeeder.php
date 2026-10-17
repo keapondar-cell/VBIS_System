@@ -9,11 +9,13 @@ class DepartmentSeeder extends Seeder
 {
     public function run(): void
     {
-        foreach (['Computer Lab', 'Library', 'Science Lab', 'Teachers'] as $name) {
+        foreach (Department::DEFAULT_NAMES as $name) {
             Department::updateOrCreate(
                 ['name' => $name],
                 ['is_active' => true]
             );
         }
+
+        Department::whereNotIn('name', Department::DEFAULT_NAMES)->update(['is_active' => false]);
     }
 }

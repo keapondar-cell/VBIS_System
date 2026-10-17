@@ -24,6 +24,8 @@
         .legacy-module-page>button:hover,.legacy-module-page td:last-child button:hover { background:#0958bb !important; }
         .legacy-module-page td button.qr-btn { background:#0d67d8 !important; color:#fff !important; }
         .legacy-module-page td button.qr-btn:hover { background:#0958bb !important; }
+        .legacy-module-page td:last-child button.delete-item-btn { background:#dc2626 !important; }
+        .legacy-module-page td:last-child button.delete-item-btn:hover { background:#b91c1c !important; }
         .legacy-module-page td:last-child { white-space: nowrap; }
         .legacy-module-page td:last-child button+button { margin-left: 4px; }
         .items-search { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 16px; }
@@ -53,13 +55,13 @@
                 <button id="newItem" style="margin-left:12px"><span aria-hidden="true">＋</span> Add New Item</button>
             @endif
             <form method="GET" action="{{ route('inventory.items.list') }}" class="items-search">
-                <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by item name, SKU, category, or location" aria-label="Search inventory items">
+                <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by item name, SKU, category, or department" aria-label="Search inventory items">
                 <button type="submit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>Search</button>
                 @if(request('search'))<a href="{{ route('inventory.items.list') }}">Clear</a>@endif
             </form>
             <table>
                 <thead>
-                    <tr><th>ID</th><th>Name</th><th>Category</th><th>Qty</th><th>Location</th><th>Status</th><th>QR</th><th>Actions</th></tr>
+                    <tr><th>ID</th><th>Name</th><th>Category</th><th>Qty</th><th>Department</th><th>Status</th><th>QR</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 @foreach($items as $item)
@@ -78,7 +80,7 @@
                         @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
                         <td>
                             <button onclick="editItem({{ $item->id }}, '{{ addslashes($item->name) }}', {{ (int)$item->quantity }}, '{{ addslashes($item->location) }}')">Edit</button>
-                            <button onclick="deleteItem({{ $item->id }})">Delete</button>
+                            <button class="delete-item-btn" onclick="deleteItem({{ $item->id }})">Delete</button>
                         </td>
                         @endif
                     </tr>
@@ -123,7 +125,7 @@
                     <div><label style="display:block;margin-bottom:4px"><strong>SKU</strong> <input id="i_sku" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>Category</strong> <input id="i_category" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>Quantity</strong> <input id="i_quantity" type="number" min="0" value="0" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
-                    <div><label style="display:block;margin-bottom:4px"><strong>Location</strong> <input id="i_location" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
+                    <div><label style="display:block;margin-bottom:4px"><strong>Department</strong> <select id="i_location" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"><option value="">Select department</option><option value="Library">Library</option><option value="Computer Lab">Computer Lab</option><option value="Science Lab">Science Lab</option><option value="JHS Department">JHS Department</option><option value="SHS Department">SHS Department</option></select></label></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>Status</strong> <select id="i_status" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"><option value="available">Available</option><option value="out_of_stock">Out of Stock</option><option value="maintenance">Maintenance</option></select></label></div>
                 </div>
                 <div><label style="display:block;margin-bottom:4px;margin-top:12px"><strong>Description</strong> <textarea id="i_description" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;min-height:80px"></textarea></label></div>
@@ -135,13 +137,24 @@
 
     <script>
     const csrf = document.querySelector('meta[name="csrf-token"]')?document.querySelector('meta[name="csrf-token"]').getAttribute('content'):null;
+    const standardDepartments = ['Library','Computer Lab','Science Lab','JHS Department','SHS Department'];
+
+    function resetDepartmentOptions(){
+        const departmentSelect = document.getElementById('i_location');
+        departmentSelect.replaceChildren(new Option('Select department', ''));
+        standardDepartments.forEach(name=>departmentSelect.add(new Option(name, name)));
+        departmentSelect.value = '';
+    }
+
     const newItemButton = document.getElementById('newItem');
     if (newItemButton) {
         newItemButton.addEventListener('click', ()=>{
             document.getElementById('itemModal').style.display='flex';
             document.getElementById('itemModalTitle').textContent='New Item';
             document.getElementById('item_id_field').value='';
-            ['i_name','i_sku','i_category','i_quantity','i_location','i_description','i_status','itemMessage'].forEach(id=>{ const el=document.getElementById(id); if(el) {el.value=''; el.textContent='';} });
+            ['i_name','i_sku','i_category','i_quantity','i_description','i_status'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+            document.getElementById('itemMessage').textContent='';
+            resetDepartmentOptions();
             document.getElementById('i_quantity').value='0';
             document.getElementById('i_status').value='available';
         });
@@ -172,7 +185,14 @@
         document.getElementById('item_id_field').value = id;
         document.getElementById('i_name').value = name;
         document.getElementById('i_quantity').value = qty;
-        document.getElementById('i_location').value = loc;
+        resetDepartmentOptions();
+        const departmentSelect = document.getElementById('i_location');
+        if (loc && !standardDepartments.includes(loc)) {
+            const legacyDepartment = new Option(loc, loc);
+            legacyDepartment.dataset.legacyDepartment = 'true';
+            departmentSelect.add(legacyDepartment);
+        }
+        departmentSelect.value = loc || '';
         // Load full item data
         fetch('/inventory/items/'+id, {headers:{'Accept':'application/json'}})
             .then(r=>r.json())

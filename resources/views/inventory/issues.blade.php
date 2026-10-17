@@ -26,7 +26,7 @@
             </div>
         </header>
 
-        @if(auth()->check() && auth()->user()->isTeacher())
+        @if(auth()->check() && (auth()->user()->isTeacher() || auth()->user()->isAdmin()))
             <div class="surface">
                 <h3>Request Material</h3>
                 <form id="createIssueForm" class="form-grid" style="position:relative">
@@ -47,7 +47,7 @@
                         <label for="ci_return_date" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">Return Date</label>
                         <input id="ci_return_date" type="date" style="width:170px;padding:6px" aria-label="Return date">
                     </div>
-                    <input id="ci_user" type="text" placeholder="User ID or name (optional)" style="width:160px;padding:6px">
+                    <input id="ci_user" type="text" placeholder="User ID or name" style="width:160px;padding:6px">
                     <select id="ci_dept" style="width:180px;padding:6px">
                         <option value="">Select department</option>
                         @foreach($departments ?? [] as $department)
@@ -60,7 +60,7 @@
             </div>
         @else
             <div class="surface">
-                <p class="page-subtitle" style="margin:0;">Only teachers can request or borrow items.</p>
+                <p class="page-subtitle" style="margin:0;">Only teachers and admins can request or borrow items.</p>
             </div>
         @endif
 

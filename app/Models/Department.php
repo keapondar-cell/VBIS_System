@@ -9,6 +9,14 @@ class Department extends Model
 {
     use HasFactory;
 
+    public const DEFAULT_NAMES = [
+        'Library',
+        'Computer Lab',
+        'Science Lab',
+        'JHS Department',
+        'SHS Department',
+    ];
+
     protected $fillable = ['name', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean'];

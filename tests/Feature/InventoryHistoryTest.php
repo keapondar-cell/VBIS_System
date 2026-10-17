@@ -120,6 +120,22 @@ class InventoryHistoryTest extends TestCase
         $this->assertSame('Damaged', $transaction->fresh()->condition);
     }
 
+    public function test_teacher_cannot_update_condition_to_an_unlisted_value(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $transaction = InventoryTransaction::factory()->create([
+            'user_id' => $teacher->id,
+            'transaction_type' => 'borrow',
+        ]);
+
+        $this->actingAs($teacher)
+            ->patchJson('/inventory/transactions/'.$transaction->id.'/condition', [
+                'condition' => 'In good condition',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('condition');
+    }
+
     public function test_only_the_owning_teacher_can_update_transaction_condition(): void
     {
         $owner = User::factory()->create(['role' => 'teacher']);

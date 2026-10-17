@@ -89,7 +89,15 @@
                 <form id="editForm" style="margin-top:12px;display:grid;gap:8px">
                     <input type="hidden" id="e_id">
                     <div><strong>Item:</strong> <span id="e_item_name"></span></div>
-                    <label>Condition <input id="e_condition" name="condition" maxlength="100" placeholder="e.g. In good condition" required></label>
+                    <label>Condition
+                        <select id="e_condition" name="condition" required>
+                            <option value="">Select condition</option>
+                            <option value="Good">Good</option>
+                            <option value="Damaged">Damaged</option>
+                            <option value="Lost">Lost</option>
+                            <option value="For Repair">For Repair</option>
+                        </select>
+                    </label>
                     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
                         <button type="submit" class="btn">Save</button>
                         <button type="button" id="cancelEdit" class="btn secondary">Cancel</button>

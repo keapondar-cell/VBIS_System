@@ -14,15 +14,38 @@ class InventoryAuthorizationTest extends TestCase
     public function test_property_custodian_can_create_item()
     {
         $user = User::factory()->create(['role' => 'property_custodian']);
+        $this->seed(\Database\Seeders\DepartmentSeeder::class);
 
         $payload = [
             'name' => 'Test Item',
             'quantity' => 5,
+            'location' => 'Science Lab',
         ];
 
         $this->actingAs($user)
             ->post(route('inventory.items.store'), $payload)
             ->assertStatus(201);
+
+        $this->assertDatabaseHas('items', [
+            'name' => 'Test Item',
+            'location' => 'Science Lab',
+        ]);
+    }
+
+    public function test_inventory_items_form_shows_department_dropdown_options()
+    {
+        \App\Models\Department::query()->delete();
+        $user = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($user)
+            ->get(route('inventory.items.list'))
+            ->assertOk()
+            ->assertSee('<select id="i_location"', false)
+            ->assertSee('<option value="Library">Library</option>', false)
+            ->assertSee('<option value="Computer Lab">Computer Lab</option>', false)
+            ->assertSee('<option value="Science Lab">Science Lab</option>', false)
+            ->assertSee('<option value="JHS Department">JHS Department</option>', false)
+            ->assertSee('<option value="SHS Department">SHS Department</option>', false);
     }
 
     public function test_teacher_cannot_create_item()
@@ -39,7 +62,7 @@ class InventoryAuthorizationTest extends TestCase
             ->assertStatus(403);
     }
 
-    public function test_admin_cannot_create_material_request()
+    public function test_admin_can_create_material_request()
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $item = Item::factory()->create(['quantity' => 10]);
@@ -50,7 +73,66 @@ class InventoryAuthorizationTest extends TestCase
                 'quantity' => 1,
                 'purpose' => 'For office use',
             ])
-            ->assertStatus(403);
+            ->assertStatus(201);
+
+        $this->assertDatabaseHas('material_issues', [
+            'item_id' => $item->id,
+            'issued_to_user_id' => $admin->id,
+            'quantity' => 1,
+            'status' => 'pending',
+            'notes' => 'For office use',
+        ]);
+    }
+
+    public function test_admin_can_see_material_request_form()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('inventory.issues.list'))
+            ->assertOk()
+            ->assertSee('Request Material')
+            ->assertSee('Borrow');
+    }
+
+    public function test_material_issues_page_shows_the_configured_departments_in_order()
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+
+        $this->actingAs($teacher)
+            ->get(route('inventory.issues.list'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Library',
+                'Computer Lab',
+                'Science Lab',
+                'JHS Department',
+                'SHS Department',
+            ]);
+    }
+
+    public function test_admin_can_borrow_item_with_purpose()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::factory()->create(['quantity' => 10]);
+
+        $this->actingAs($admin)
+            ->post(route('inventory.transactions.store'), [
+                'item_id' => $item->id,
+                'transaction_type' => 'borrow',
+                'quantity' => 1,
+                'purpose' => 'For office use',
+            ])
+            ->assertStatus(201);
+
+        $this->assertDatabaseHas('inventory_transactions', [
+            'item_id' => $item->id,
+            'user_id' => $admin->id,
+            'transaction_type' => 'borrow',
+            'quantity' => 1,
+            'status' => 'pending',
+            'notes' => 'For office use',
+        ]);
     }
 
     public function test_teacher_request_requires_purpose()

@@ -777,6 +777,7 @@ class InventoryMonitoringController extends Controller
         }
 
         $items = $query->orderBy('name')->paginate(25)->withQueryString();
+
         return view('inventory.items', ['items' => $items]);
     }
 

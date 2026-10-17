@@ -117,9 +117,9 @@ class InventoryHistoryController extends Controller
         $user = $request->user();
         $transactionType = strtolower((string) $request->input('transaction_type'));
 
-        // Only teachers may borrow items; admin/property custodian can manage other inventory transactions.
-        if ($transactionType === 'borrow' && (! $user || ! $user->isTeacher())) {
-            return response()->json(['error' => 'Only teachers can borrow items.'], 403);
+        // Teachers and admins may request to borrow items; property custodians manage other transactions.
+        if ($transactionType === 'borrow' && (! $user || (! $user->isTeacher() && ! $user->isAdmin()))) {
+            return response()->json(['error' => 'Only teachers and admins can borrow items.'], 403);
         }
 
         if (! in_array($transactionType, ['borrow', 'return'], true) && (! $user || ! ($user->isAdmin() || $user->isPropertyCustodian()))) {
@@ -358,7 +358,7 @@ class InventoryHistoryController extends Controller
         }
 
         $data = $request->validate([
-            'condition' => 'required|string|min:2|max:100',
+            'condition' => 'required|string|in:Good,Damaged,Lost,For Repair',
         ]);
 
         $transaction->update(['condition' => trim($data['condition'])]);

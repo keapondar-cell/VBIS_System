@@ -36,9 +36,9 @@ class MaterialIssuanceController extends Controller
     {
         $user = $request->user();
 
-        // Only teacher users can create material requests.
-        if (! $user || ! $user->isTeacher()) {
-            return response()->json(['error' => 'Only teachers can request items.'], 403);
+        // Teachers and admins can create material requests.
+        if (! $user || (! $user->isTeacher() && ! $user->isAdmin())) {
+            return response()->json(['error' => 'Only teachers and admins can request items.'], 403);
         }
 
         $data = $request->validate([
@@ -192,7 +192,11 @@ class MaterialIssuanceController extends Controller
     // UI view for issues list
     public function issuesView()
     {
-        return view('inventory.issues', ['departments' => Department::where('is_active', true)->orderBy('name')->get()]);
+        $departments = Department::where('is_active', true)
+            ->orderByRaw("CASE name WHEN 'Library' THEN 1 WHEN 'Computer Lab' THEN 2 WHEN 'Science Lab' THEN 3 WHEN 'JHS Department' THEN 4 WHEN 'SHS Department' THEN 5 ELSE 6 END")
+            ->get();
+
+        return view('inventory.issues', compact('departments'));
     }
 
     public function update(Request $request, $id)
