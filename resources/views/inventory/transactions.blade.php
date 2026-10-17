@@ -29,8 +29,8 @@
             #exportPdf:hover{background:#b71c1c}
         .pager{margin-top:10px}
         .link{color:#0b61d8;cursor:pointer}
-        .modal{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center}
-        .modal .panel{background:#fff;padding:20px;max-width:800px;width:90%;border-radius:12px;box-shadow:0 20px 50px rgba(18,59,93,.2)}
+        .modal{position:fixed;inset:0;z-index:1000;box-sizing:border-box;width:100vw;height:100vh;padding:16px;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;overflow-y:auto}
+        .modal .panel{box-sizing:border-box;background:#fff;padding:20px;max-width:800px;width:100%;max-height:calc(100vh - 32px);overflow-y:auto;border-radius:12px;box-shadow:0 20px 50px rgba(18,59,93,.2)}
         @media (max-width:700px){.legacy-module-page{padding:1rem .75rem}.toolbar{align-items:flex-start}.card{padding:14px}.filters{align-items:stretch!important}.filters label{width:100%}.filters input,.filters select{width:100%;box-sizing:border-box}}
     </style>
 
@@ -128,7 +128,14 @@
                     <button id="closeCreate" class="btn secondary">Close</button>
                 </div>
                 <form id="createForm" style="margin-top:12px;display:grid;gap:8px">
-                    <label>Item ID <input id="c_item_id" name="item_id" required></label>
+                    <label>Item name
+                        <select id="c_item_id" name="item_id" required>
+                            <option value="">Select item</option>
+                            @foreach($items ?? [] as $item)
+                                <option value="{{ $item->id }}">{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
                     <label>Type
                         <select id="c_type" name="transaction_type">
                             <option value="issue">issue</option>
@@ -138,8 +145,9 @@
                         </select>
                     </label>
                     <label>Quantity <input id="c_quantity" name="quantity" type="number" min="1" value="1" required></label>
-                    <label>Purpose <input id="c_purpose" name="purpose" placeholder="Specify the reason for borrowing" required></label>
-                    <label>Expected Return <input id="c_expected_return_at" name="expected_return_at" type="datetime-local"></label>
+                    <label id="createPurposeField">Purpose <input id="c_purpose" name="purpose" placeholder="Specify the reason for borrowing"></label>
+                    <label id="createBorrowedAtField">Date borrowed <input id="c_requested_for_at" name="requested_for_at" type="datetime-local"></label>
+                    <label id="createExpectedReturnField">Expected Return <input id="c_expected_return_at" name="expected_return_at" type="datetime-local"></label>
                     <label>User
                         <select id="c_user_id" name="user_id">
                             <option value="">Select user</option>
@@ -174,7 +182,23 @@
         const detailContent = document.getElementById('detailContent');
         const createModal = document.getElementById('createModal');
         const createForm = document.getElementById('createForm');
+        const createType = document.getElementById('c_type');
+        const createPurpose = document.getElementById('c_purpose');
+        const borrowedAt = document.getElementById('c_requested_for_at');
+        const expectedReturn = document.getElementById('c_expected_return_at');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        function updateBorrowFields(){
+            const isBorrow = createType.value === 'borrow';
+            document.getElementById('createPurposeField').hidden = !isBorrow;
+            document.getElementById('createBorrowedAtField').hidden = !isBorrow;
+            document.getElementById('createExpectedReturnField').hidden = !isBorrow;
+            createPurpose.required = isBorrow;
+            if (!isBorrow) {
+                borrowedAt.value = '';
+                expectedReturn.value = '';
+            }
+        }
 
         function buildQuery(params){
             return Object.keys(params).filter(k=>params[k]!=='' && params[k]!=null).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&');
@@ -203,7 +227,7 @@
             const list = data.data || data;
             if(!list || list.length===0){ resultsEl.innerHTML = '<div class="muted">No transactions found.</div>'; return; }
 
-            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Requested date &amp; time</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
+            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Date borrowed / requested</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
             const canEdit = @json(auth()->user()?->isTeacher() ?? false);
             const canManage = @json(auth()->user()?->isAdmin() || auth()->user()?->isPropertyCustodian());
             if(canEdit || canManage) html += '<th>Actions</th>';
@@ -273,7 +297,7 @@
             html += `<div><strong>Type:</strong> ${escapeHtml(t.transaction_type)} ${t.transaction_type === 'adjustment' ? '<em style="color:#b45309;margin-left:8px">(manual adjustment)</em>' : ''}</div>`;
             html += `<div><strong>Quantity:</strong> ${t.quantity}</div>`;
             html += `<div><strong>Department:</strong> ${escapeHtml(t.department && t.department.name ? t.department.name : (t.department_id || 'N/A'))}</div>`;
-            html += `<div><strong>Requested date &amp; time:</strong> ${escapeHtml(t.requested_for_at ? new Date(t.requested_for_at).toLocaleString() : 'N/A')}</div>`;
+            html += `<div><strong>${t.transaction_type === 'borrow' ? 'Date borrowed' : 'Requested date &amp; time'}:</strong> ${escapeHtml(t.requested_for_at ? new Date(t.requested_for_at).toLocaleString() : 'N/A')}</div>`;
             html += `<div><strong>Expected return:</strong> ${escapeHtml(t.expected_return_at||'N/A')}</div>`;
             html += `<div><strong>Returned:</strong> ${escapeHtml(t.returned_at||'N/A')}</div>`;
             html += `<div><strong>Condition:</strong> ${escapeHtml(t.condition||'Not recorded')}</div>`;
@@ -417,25 +441,31 @@
         }
         document.getElementById('closeCreate').addEventListener('click', ()=>{ createModal.style.display='none'; });
         document.getElementById('cancelCreate').addEventListener('click', ()=>{ createModal.style.display='none'; });
+        createType.addEventListener('change', updateBorrowFields);
+        updateBorrowFields();
 
         createForm.addEventListener('submit', async (e)=>{
             e.preventDefault();
-            const purpose = (document.getElementById('c_purpose').value || '').trim();
-            if (!purpose) {
+            const isBorrow = createType.value === 'borrow';
+            const purpose = createPurpose.value.trim();
+            if (isBorrow && !purpose) {
                 document.getElementById('createMessage').textContent = 'Please specify the purpose for this borrowing request.';
                 return;
             }
 
             const payload = {
                 item_id: document.getElementById('c_item_id').value,
-                transaction_type: document.getElementById('c_type').value,
+                transaction_type: createType.value,
                 quantity: document.getElementById('c_quantity').value,
-                purpose,
-                expected_return_at: document.getElementById('c_expected_return_at').value || undefined,
                 user_id: document.getElementById('c_user_id').value || undefined,
                 department_id: document.getElementById('c_department_id').value || undefined,
                 notes: document.getElementById('c_notes').value || undefined,
             };
+            if (isBorrow) {
+                payload.purpose = purpose;
+                payload.requested_for_at = borrowedAt.value || undefined;
+                payload.expected_return_at = expectedReturn.value || undefined;
+            }
 
             const res = await fetch('/inventory/transactions', {
                 method: 'POST',

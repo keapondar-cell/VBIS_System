@@ -36,10 +36,15 @@ class InventoryAuthorizationTest extends TestCase
     {
         \App\Models\Department::query()->delete();
         $user = User::factory()->create(['role' => 'admin']);
+        Item::factory()->create(['name' => 'Desk Lamp']);
 
         $this->actingAs($user)
             ->get(route('inventory.items.list'))
             ->assertOk()
+            ->assertSee('<th>Name</th>', false)
+            ->assertDontSee('<th>ID</th>', false)
+            ->assertDontSee('Item ID:')
+            ->assertSee('Desk Lamp')
             ->assertSee('<select id="i_location"', false)
             ->assertSee('<option value="Library">Library</option>', false)
             ->assertSee('<option value="Computer Lab">Computer Lab</option>', false)
@@ -115,13 +120,15 @@ class InventoryAuthorizationTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $item = Item::factory()->create(['quantity' => 10]);
+        $borrowedAt = '2026-10-18T09:30';
 
         $this->actingAs($admin)
-            ->post(route('inventory.transactions.store'), [
+            ->postJson(route('inventory.transactions.store'), [
                 'item_id' => $item->id,
                 'transaction_type' => 'borrow',
                 'quantity' => 1,
                 'purpose' => 'For office use',
+                'requested_for_at' => $borrowedAt,
             ])
             ->assertStatus(201);
 
@@ -132,6 +139,7 @@ class InventoryAuthorizationTest extends TestCase
             'quantity' => 1,
             'status' => 'pending',
             'notes' => 'For office use',
+            'requested_for_at' => '2026-10-18 09:30:00',
         ]);
     }
 

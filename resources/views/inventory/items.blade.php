@@ -61,12 +61,11 @@
             </form>
             <table>
                 <thead>
-                    <tr><th>ID</th><th>Name</th><th>Category</th><th>Qty</th><th>Department</th><th>Status</th><th>QR</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Category</th><th>Qty</th><th>Department</th><th>Status</th><th>QR</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 @foreach($items as $item)
                     <tr>
-                        <td>{{ $item->id }}</td>
                         <td>{{ $item->name }}</td>
                         <td>{{ $item->category ?? 'N/A' }}</td>
                         <td>{{ $item->quantity }}</td>
@@ -110,7 +109,6 @@
         <div class="qr-modal-content" style="background:#fff;padding:20px;border-radius:8px;text-align:center;max-width:400px">
             <h3>QR Code</h3>
             <img src="" alt="QR" style="max-width:300px;height:auto;margin:15px 0">
-            <p style="font-size:12px;color:#666">Item ID: </p>
             <button class="qr-modal-close" style="background:#6c757d;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:15px" onclick="document.getElementById('qrModal').style.display='none'">Close</button>
         </div>
     </div>
@@ -181,7 +179,7 @@
 
     function editItem(id,name,qty,loc){
         document.getElementById('itemModal').style.display='flex';
-        document.getElementById('itemModalTitle').textContent='Edit Item '+id;
+        document.getElementById('itemModalTitle').textContent='Edit Item';
         document.getElementById('item_id_field').value = id;
         document.getElementById('i_name').value = name;
         document.getElementById('i_quantity').value = qty;
@@ -205,7 +203,7 @@
     }
 
     async function deleteItem(id){
-        if(!confirm('Delete item #'+id+'?')) return;
+        if(!confirm('Delete this item?')) return;
         const res = await fetch('/inventory/items/'+id, { method: 'DELETE', headers: {'X-CSRF-TOKEN': csrf} });
         if(res.ok){ location.reload(); } else { alert('Delete failed'); }
     }
@@ -222,15 +220,13 @@
                 const newModal = document.createElement('div');
                 newModal.id = 'qrModal';
                 newModal.style.cssText = 'display:flex;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000';
-                newModal.innerHTML = '<div class="qr-modal-content" style="background:#fff;padding:20px;border-radius:8px;text-align:center;max-width:400px"><h3>QR Code for ' + itemName + '</h3><img src="' + imageUrl + '" alt="QR" style="max-width:300px;height:auto;margin:15px 0"><p style="font-size:12px;color:#666">Item ID: ' + id + '</p><button class="qr-modal-close" style="background:#6c757d;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:15px" onclick="document.getElementById(\'qrModal\').style.display=\'none\'">Close</button></div>';
+                newModal.innerHTML = '<div class="qr-modal-content" style="background:#fff;padding:20px;border-radius:8px;text-align:center;max-width:400px"><h3>QR Code for ' + itemName + '</h3><img src="' + imageUrl + '" alt="QR" style="max-width:300px;height:auto;margin:15px 0"><button class="qr-modal-close" style="background:#6c757d;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:15px" onclick="document.getElementById(\'qrModal\').style.display=\'none\'">Close</button></div>';
                 document.body.appendChild(newModal);
             } else {
                 const img = modal.querySelector('img');
                 const heading = modal.querySelector('h3');
-                const idText = modal.querySelector('p');
                 if(img) img.src = imageUrl;
                 if(heading) heading.textContent = 'QR Code for ' + itemName;
-                if(idText) idText.textContent = 'Item ID: ' + id;
                 modal.style.display = 'flex';
             }
             document.getElementById('qrModal').style.display = 'flex';

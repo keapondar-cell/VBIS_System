@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Models\InventoryTransaction;
+use App\Models\Item;
 use App\Models\User;
 use App\Notifications\InventoryTransactionNotification;
 use App\Services\InventoryService;
@@ -288,6 +289,7 @@ class InventoryHistoryController extends Controller
     public function transactionsView()
     {
         return view('inventory.transactions', [
+            'items' => Item::orderBy('name')->get(['id', 'name']),
             'users' => User::orderBy('name')->get(),
             'departments' => Department::where('is_active', true)->orderBy('name')->get(),
         ]);

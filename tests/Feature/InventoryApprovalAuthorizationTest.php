@@ -66,6 +66,19 @@ class InventoryApprovalAuthorizationTest extends TestCase
             ->assertStatus(201);
     }
 
+    public function test_transaction_form_lists_inventory_items_by_name()
+    {
+        $pc = User::factory()->create(['role' => 'property_custodian']);
+        $item = Item::factory()->create(['name' => 'Whiteboard Marker']);
+
+        $this->actingAs($pc)
+            ->get(route('inventory.transactions.list'))
+            ->assertOk()
+            ->assertSee('Item name')
+            ->assertSee('Whiteboard Marker')
+            ->assertSee('name="item_id"', false);
+    }
+
     public function test_teacher_cannot_create_transaction()
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
