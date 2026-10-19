@@ -64,7 +64,6 @@ Route::prefix('inventory')->middleware('auth')->name('inventory.')->group(functi
     Route::post('issues/{id}/approve', [MaterialIssuanceController::class, 'approve'])->name('issues.approve');
     Route::post('issues/{id}/reject', [MaterialIssuanceController::class, 'reject'])->name('issues.reject');
     Route::patch('issues/{id}', [MaterialIssuanceController::class, 'update'])->name('issues.update');
-    Route::put('issues/{id}', [MaterialIssuanceController::class, 'update'])->name('issues.update.put');
     Route::delete('issues/{id}', [MaterialIssuanceController::class, 'destroy'])->name('issues.destroy');
 
     // Items and monitoring
@@ -116,3 +115,4 @@ Route::prefix('inventory')->middleware('auth')->name('inventory.')->group(functi
 });
 
 require __DIR__.'/auth.php';
+
