@@ -42,7 +42,7 @@
                                 <th class="px-3 py-2 text-left">Type</th>
                                 <th class="px-3 py-2 text-left">Qty</th>
                                 <th class="px-3 py-2 text-left">Department</th>
-                                <th class="px-3 py-2 text-left">Requested Date/Time</th>
+                                <th class="px-3 py-2 text-left">Issue / Borrow Date</th>
                                 <th class="px-3 py-2 text-left">Expected Return</th>
                                 <th class="px-3 py-2 text-left">Returned</th>
                                 <th class="px-3 py-2 text-left">Notes</th>
@@ -57,7 +57,7 @@
                                     <td class="px-3 py-2">{{ ucfirst($transaction->transaction_type ?? 'update') }}</td>
                                     <td class="px-3 py-2">{{ $transaction->quantity }}</td>
                                     <td class="px-3 py-2">{{ $transaction->department->name ?? ($transaction->department_id ? 'Department '.$transaction->department_id : 'N/A') }}</td>
-                                    <td class="px-3 py-2">{{ $transaction->requested_for_at?->format('M d, Y h:i A') ?? 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ $transaction->requested_for_at?->format($transaction->transaction_type === 'issue' ? 'M d, Y' : 'M d, Y h:i A') ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ $transaction->expected_return_at?->format('M d, Y h:i A') ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ $transaction->returned_at?->format('M d, Y h:i A') ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ $transaction->notes ?? 'N/A' }}</td>

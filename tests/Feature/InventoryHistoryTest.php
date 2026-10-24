@@ -31,6 +31,26 @@ class InventoryHistoryTest extends TestCase
         $pdf->assertHeader('Content-Disposition');
     }
 
+    public function test_issue_transaction_records_the_selected_issue_date(): void
+    {
+        $custodian = User::factory()->create(['role' => 'property_custodian']);
+        $item = Item::factory()->create(['quantity' => 5]);
+
+        $response = $this->actingAs($custodian)->postJson('/inventory/transactions', [
+            'item_id' => $item->id,
+            'transaction_type' => 'issue',
+            'quantity' => 1,
+            'requested_for_at' => '2026-10-24',
+        ]);
+
+        $response->assertCreated();
+        $this->assertSame('2026-10-24', \Carbon\Carbon::parse($response->json('requested_for_at'))->format('Y-m-d'));
+        $this->assertDatabaseHas('inventory_transactions', [
+            'id' => $response->json('id'),
+            'requested_for_at' => '2026-10-24 00:00:00',
+        ]);
+    }
+
     public function test_return_transaction_links_to_open_borrow_and_closes_it(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);

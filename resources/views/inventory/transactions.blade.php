@@ -146,7 +146,7 @@
                     </label>
                     <label>Quantity <input id="c_quantity" name="quantity" type="number" min="1" value="1" required></label>
                     <label id="createPurposeField">Purpose <input id="c_purpose" name="purpose" placeholder="Specify the reason for borrowing"></label>
-                    <label id="createBorrowedAtField">Date borrowed <input id="c_requested_for_at" name="requested_for_at" type="datetime-local"></label>
+                    <label id="createRequestedAtField"><span id="createRequestedAtLabel">Date borrowed</span> <input id="c_requested_for_at" name="requested_for_at" type="datetime-local"></label>
                     <label id="createExpectedReturnField">Expected Return <input id="c_expected_return_at" name="expected_return_at" type="datetime-local"></label>
                     <label>User
                         <select id="c_user_id" name="user_id">
@@ -184,19 +184,29 @@
         const createForm = document.getElementById('createForm');
         const createType = document.getElementById('c_type');
         const createPurpose = document.getElementById('c_purpose');
-        const borrowedAt = document.getElementById('c_requested_for_at');
+        const requestedAt = document.getElementById('c_requested_for_at');
         const expectedReturn = document.getElementById('c_expected_return_at');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         function updateBorrowFields(){
             const isBorrow = createType.value === 'borrow';
+            const isIssue = createType.value === 'issue';
             document.getElementById('createPurposeField').hidden = !isBorrow;
-            document.getElementById('createBorrowedAtField').hidden = !isBorrow;
+            document.getElementById('createRequestedAtField').hidden = !isBorrow && !isIssue;
             document.getElementById('createExpectedReturnField').hidden = !isBorrow;
+            document.getElementById('createRequestedAtLabel').textContent = isIssue ? 'Issue date' : 'Date borrowed';
+            const requestedAtType = isIssue ? 'date' : 'datetime-local';
+            if (requestedAt.type !== requestedAtType) {
+                requestedAt.value = '';
+                requestedAt.type = requestedAtType;
+            }
+            requestedAt.required = isIssue;
             createPurpose.required = isBorrow;
             if (!isBorrow) {
-                borrowedAt.value = '';
                 expectedReturn.value = '';
+            }
+            if (!isBorrow && !isIssue) {
+                requestedAt.value = '';
             }
         }
 
@@ -227,7 +237,7 @@
             const list = data.data || data;
             if(!list || list.length===0){ resultsEl.innerHTML = '<div class="muted">No transactions found.</div>'; return; }
 
-            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Date borrowed / requested</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
+            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Issue / borrow date</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
             const canEdit = @json(auth()->user()?->isTeacher() ?? false);
             const canManage = @json(auth()->user()?->isAdmin() || auth()->user()?->isPropertyCustodian());
             if(canEdit || canManage) html += '<th>Actions</th>';
@@ -236,7 +246,9 @@
                 const type = (t.transaction_type||'').toLowerCase();
                 const typeLabel = type === 'adjustment' ? `<span style="background:#f59e0b;color:#fff;padding:4px 6px;border-radius:4px">Adjustment</span>` : `<span style="background:#0b61d8;color:#fff;padding:4px 6px;border-radius:4px">${escapeHtml(t.transaction_type)}</span>`;
                 const department = t.department && t.department.name ? t.department.name : (t.department_id ? 'Department '+t.department_id : '');
-                const requestedFor = t.requested_for_at ? new Date(t.requested_for_at).toLocaleString() : 'N/A';
+                const requestedFor = t.requested_for_at
+                    ? new Date(t.requested_for_at).toLocaleString(undefined, type === 'issue' ? { dateStyle: 'medium' } : undefined)
+                    : 'N/A';
                 let statusCell = escapeHtml(t.status || 'N/A');
                 let actions = '';
                 if (canManage && type === 'borrow' && t.status === 'pending') {
@@ -297,7 +309,11 @@
             html += `<div><strong>Type:</strong> ${escapeHtml(t.transaction_type)} ${t.transaction_type === 'adjustment' ? '<em style="color:#b45309;margin-left:8px">(manual adjustment)</em>' : ''}</div>`;
             html += `<div><strong>Quantity:</strong> ${t.quantity}</div>`;
             html += `<div><strong>Department:</strong> ${escapeHtml(t.department && t.department.name ? t.department.name : (t.department_id || 'N/A'))}</div>`;
-            html += `<div><strong>${t.transaction_type === 'borrow' ? 'Date borrowed' : 'Requested date &amp; time'}:</strong> ${escapeHtml(t.requested_for_at ? new Date(t.requested_for_at).toLocaleString() : 'N/A')}</div>`;
+            const requestedDateLabel = t.transaction_type === 'issue' ? 'Issue date' : (t.transaction_type === 'borrow' ? 'Date borrowed' : 'Requested date &amp; time');
+            const requestedDate = t.requested_for_at
+                ? new Date(t.requested_for_at).toLocaleString(undefined, t.transaction_type === 'issue' ? { dateStyle: 'medium' } : undefined)
+                : 'N/A';
+            html += `<div><strong>${requestedDateLabel}:</strong> ${escapeHtml(requestedDate)}</div>`;
             html += `<div><strong>Expected return:</strong> ${escapeHtml(t.expected_return_at||'N/A')}</div>`;
             html += `<div><strong>Returned:</strong> ${escapeHtml(t.returned_at||'N/A')}</div>`;
             html += `<div><strong>Condition:</strong> ${escapeHtml(t.condition||'Not recorded')}</div>`;
@@ -463,8 +479,10 @@
             };
             if (isBorrow) {
                 payload.purpose = purpose;
-                payload.requested_for_at = borrowedAt.value || undefined;
                 payload.expected_return_at = expectedReturn.value || undefined;
+            }
+            if (isBorrow || createType.value === 'issue') {
+                payload.requested_for_at = requestedAt.value || undefined;
             }
 
             const res = await fetch('/inventory/transactions', {
