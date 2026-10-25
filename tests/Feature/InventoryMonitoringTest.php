@@ -83,6 +83,25 @@ class InventoryMonitoringTest extends TestCase
         $response->assertOk()->assertJsonPath('departments.0.department_id', 12);
     }
 
+    public function test_item_creation_date_is_used_for_its_realtime_activity_date(): void
+    {
+        $user = User::factory()->create(['role' => 'property_custodian']);
+
+        $this->actingAs($user)
+            ->postJson('/inventory/items', [
+                'name' => 'Backdated Item',
+                'quantity' => 3,
+                'created_at' => '2026-10-25T09:15',
+            ])
+            ->assertCreated();
+
+        $this->get('/inventory/dashboard/realtime')
+            ->assertOk()
+            ->assertJsonPath('recent_transactions.0.transaction_type', 'receive')
+            ->assertJsonPath('recent_transactions.0.item.name', 'Backdated Item')
+            ->assertJsonPath('recent_transactions.0.created_at', '2026-10-25T01:15:00.000000Z');
+    }
+
     public function test_dashboard_summary_supports_paginated_low_stock_items(): void
     {
         $this->actingAs(User::factory()->create());

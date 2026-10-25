@@ -810,7 +810,7 @@ class InventoryMonitoringController extends Controller
 
         // record initial stock as a receive transaction for audit trail
         try {
-            \App\Models\InventoryTransaction::create([
+            $initialStockTransaction = new InventoryTransaction([
                 'item_id' => $item->id,
                 'user_id' => $request->user() ? $request->user()->id : null,
                 'department_id' => null,
@@ -818,6 +818,8 @@ class InventoryMonitoringController extends Controller
                 'quantity' => $item->quantity ?? 0,
                 'notes' => 'Initial stock on item creation',
             ]);
+            $initialStockTransaction->created_at = $item->created_at;
+            $initialStockTransaction->save();
         } catch (\Exception $e) {
             // non-fatal: continue even if audit write fails
         }
