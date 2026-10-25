@@ -61,7 +61,7 @@
             </form>
             <table>
                 <thead>
-                    <tr><th>Name</th><th>Category</th><th>Qty</th><th>Department</th><th>Status</th><th>QR</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Category</th><th>Qty</th><th>Department</th><th>Status</th><th>Date Added</th><th>QR</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 @foreach($items as $item)
@@ -75,6 +75,7 @@
                             $statusClass = $item->quantity <= 0 || in_array($itemStatus, ['out_of_stock', 'out of stock'], true) ? 'background:#fee2e2;color:#991b1b' : ($item->quantity <= 5 || $itemStatus === 'low stock' ? 'background:#fef3c7;color:#92400e' : 'background:#dcfce7;color:#166534');
                         @endphp
                         <td><span style="{{ $statusClass }};padding:3px 8px;border-radius:999px;font-size:12px;font-weight:700">{{ $item->quantity <= 0 ? 'Out of stock' : ($item->quantity <= 5 ? 'Low stock' : 'Available') }}</span></td>
+                        <td>{{ $item->created_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? 'N/A' }}</td>
                         <td><button class="qr-btn" onclick="generateQR({{ $item->id }}, '{{ addslashes($item->name) }}')">Generate QR</button></td>
                         @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
                         <td>
@@ -123,6 +124,7 @@
                     <div><label style="display:block;margin-bottom:4px"><strong>SKU</strong> <input id="i_sku" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>Category</strong> <input id="i_category" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>Quantity</strong> <input id="i_quantity" type="number" min="0" value="0" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
+                    <div id="itemCreatedAtField"><label style="display:block;margin-bottom:4px"><strong>Date and Time Added</strong> <input id="i_created_at" type="datetime-local" value="{{ now('Asia/Manila')->format('Y-m-d\TH:i') }}" required style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>Department</strong> <select id="i_location" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"><option value="">Select department</option><option value="Library">Library</option><option value="Computer Lab">Computer Lab</option><option value="Science Lab">Science Lab</option><option value="JHS Department">JHS Department</option><option value="SHS Department">SHS Department</option></select></label></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>Status</strong> <select id="i_status" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"><option value="available">Available</option><option value="out_of_stock">Out of Stock</option><option value="maintenance">Maintenance</option></select></label></div>
                 </div>
@@ -150,6 +152,8 @@
             document.getElementById('itemModal').style.display='flex';
             document.getElementById('itemModalTitle').textContent='New Item';
             document.getElementById('item_id_field').value='';
+            document.getElementById('itemCreatedAtField').style.display='';
+            document.getElementById('i_created_at').disabled=false;
             ['i_name','i_sku','i_category','i_quantity','i_description','i_status'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
             document.getElementById('itemMessage').textContent='';
             resetDepartmentOptions();
@@ -171,6 +175,9 @@
             description: document.getElementById('i_description').value || null,
             status: document.getElementById('i_status').value || 'available'
         };
+        if(!id){
+            payload.created_at = document.getElementById('i_created_at').value;
+        }
         const method = id? 'PUT' : 'POST';
         const url = id? ('/inventory/items/'+id) : '/inventory/items';
         const res = await fetch(url, { method, headers: {'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'Accept':'application/json'}, body: JSON.stringify(payload) });
@@ -196,6 +203,8 @@
         document.getElementById('itemModal').style.display='flex';
         document.getElementById('itemModalTitle').textContent='Edit Item';
         document.getElementById('item_id_field').value = id;
+        document.getElementById('itemCreatedAtField').style.display='none';
+        document.getElementById('i_created_at').disabled=true;
         document.getElementById('i_name').value = name;
         document.getElementById('i_quantity').value = qty;
         resetDepartmentOptions();

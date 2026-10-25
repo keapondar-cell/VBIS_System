@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Item;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -32,16 +33,42 @@ class InventoryAuthorizationTest extends TestCase
         ]);
     }
 
+    public function test_item_creation_uses_the_selected_philippines_date_and_time(): void
+    {
+        $user = User::factory()->create(['role' => 'property_custodian']);
+
+        $this->actingAs($user)
+            ->postJson(route('inventory.items.store'), [
+                'name' => 'Backdated Item',
+                'quantity' => 5,
+                'created_at' => '2026-10-25T09:15',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('created_at', '2026-10-25T01:15:00.000000Z');
+
+        $this->assertDatabaseHas('items', [
+            'name' => 'Backdated Item',
+            'created_at' => '2026-10-25 01:15:00',
+        ]);
+    }
+
     public function test_inventory_items_form_shows_department_dropdown_options()
     {
         \App\Models\Department::query()->delete();
         $user = User::factory()->create(['role' => 'admin']);
-        Item::factory()->create(['name' => 'Desk Lamp']);
+        Item::factory()->create([
+            'name' => 'Desk Lamp',
+            'created_at' => Carbon::parse('2026-10-25 01:00:00', 'UTC'),
+        ]);
 
         $this->actingAs($user)
             ->get(route('inventory.items.list'))
             ->assertOk()
             ->assertSee('<th>Name</th>', false)
+            ->assertSee('<th>Date Added</th>', false)
+            ->assertSee('type="datetime-local"', false)
+            ->assertSee('Date and Time Added')
+            ->assertSee('Oct 25, 2026 09:00 AM')
             ->assertDontSee('<th>ID</th>', false)
             ->assertDontSee('Item ID:')
             ->assertSee('Desk Lamp')

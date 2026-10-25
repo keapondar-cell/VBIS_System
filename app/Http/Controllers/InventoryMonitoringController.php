@@ -796,9 +796,17 @@ class InventoryMonitoringController extends Controller
             'quantity' => 'required|integer|min:0',
             'location' => 'nullable|string|max:128',
             'status' => 'nullable|string|max:32',
+            'created_at' => 'nullable|date_format:Y-m-d\TH:i',
         ]);
 
-        $item = Item::create($data);
+        $createdAt = $data['created_at'] ?? null;
+        unset($data['created_at']);
+
+        $item = new Item($data);
+        if ($createdAt !== null) {
+            $item->created_at = Carbon::createFromFormat('Y-m-d\TH:i', $createdAt, 'Asia/Manila')->utc();
+        }
+        $item->save();
 
         // record initial stock as a receive transaction for audit trail
         try {
