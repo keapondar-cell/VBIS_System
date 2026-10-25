@@ -22,9 +22,59 @@ class InventoryStockIntegrityTest extends TestCase
                 'name' => 'Updated item',
                 'quantity' => 50,
             ])
-            ->assertStatus(202);
+            ->assertStatus(202)
+            ->assertJsonPath('message', 'Quantity adjustment request created; stock changes after approval.');
 
         $this->assertSame(100, $item->fresh()->quantity);
+        $this->assertSame('Updated item', $item->fresh()->name);
+        $this->assertDatabaseHas('adjustment_requests', [
+            'item_id' => $item->id,
+            'old_quantity' => 100,
+            'new_quantity' => 50,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_property_custodian_updates_quantity_without_approval(): void
+    {
+        $custodian = User::factory()->create(['role' => 'property_custodian']);
+        $item = Item::factory()->create(['quantity' => 100]);
+
+        $this->actingAs($custodian)
+            ->putJson('/inventory/items/'.$item->id, [
+                'name' => $item->name,
+                'quantity' => 50,
+            ])
+            ->assertOk()
+            ->assertJsonPath('quantity', 50);
+
+        $this->assertSame(50, $item->fresh()->quantity);
+        $this->assertDatabaseMissing('adjustment_requests', [
+            'item_id' => $item->id,
+            'status' => 'pending',
+        ]);
+        $this->assertDatabaseHas('inventory_transactions', [
+            'item_id' => $item->id,
+            'user_id' => $custodian->id,
+            'transaction_type' => 'adjustment',
+            'quantity' => 50,
+            'quantity_change' => -50,
+            'old_quantity' => 100,
+            'new_quantity' => 50,
+            'status' => 'approved',
+            'performed_by' => $custodian->id,
+        ]);
+    }
+
+    public function test_item_edit_explains_quantity_approval_workflow(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get('/inventory/items/list')
+            ->assertOk()
+            ->assertSee('Quantity change submitted for approval.')
+            ->assertSee('/inventory/adjustments/list');
     }
 
     public function test_approved_borrow_deducts_stock_once_and_return_restores_it(): void

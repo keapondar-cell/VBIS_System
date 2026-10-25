@@ -174,7 +174,22 @@
         const method = id? 'PUT' : 'POST';
         const url = id? ('/inventory/items/'+id) : '/inventory/items';
         const res = await fetch(url, { method, headers: {'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'Accept':'application/json'}, body: JSON.stringify(payload) });
-        if(res.ok){ document.getElementById('itemMessage').textContent='Saved.'; location.reload(); } else { const j = await res.json().catch(()=>({error:'error'})); document.getElementById('itemMessage').textContent = j.error||JSON.stringify(j); }
+        const result = await res.json().catch(()=>({}));
+        const message = document.getElementById('itemMessage');
+        message.replaceChildren();
+
+        if(res.status === 202){
+            message.append(document.createTextNode('Quantity change submitted for approval. The current stock will remain unchanged until it is approved. '));
+            const adjustmentsLink = document.createElement('a');
+            adjustmentsLink.href = '/inventory/adjustments/list';
+            adjustmentsLink.textContent = 'Review adjustment requests';
+            message.append(adjustmentsLink);
+        } else if(res.ok){
+            location.reload();
+        } else {
+            const validationErrors = Object.values(result.errors || {}).flat().join(' ');
+            message.textContent = result.error || validationErrors || result.message || 'Unable to save item.';
+        }
     });
 
     function editItem(id,name,qty,loc){

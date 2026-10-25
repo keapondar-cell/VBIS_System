@@ -838,6 +838,21 @@ class InventoryMonitoringController extends Controller
         $newQty = array_key_exists('quantity', $data) ? (int) $data['quantity'] : $oldQty;
 
         if (array_key_exists('quantity', $data) && $newQty !== $oldQty) {
+            if ($request->user()->isPropertyCustodian()) {
+                app(\App\Services\InventoryService::class)->adjust($item->id, $newQty, [
+                    'user_id' => $request->user()->id,
+                    'performed_by' => $request->user()->id,
+                    'reason' => 'Inventory quantity updated by property custodian',
+                    'notes' => 'Quantity changed from '.$oldQty.' to '.$newQty,
+                ]);
+
+                unset($data['quantity']);
+                $item->fill($data);
+                $item->save();
+
+                return response()->json($item->fresh());
+            }
+
             $delta = $newQty - $oldQty;
             $req = \App\Models\AdjustmentRequest::create([
                 'item_id' => $item->id,
@@ -856,7 +871,10 @@ class InventoryMonitoringController extends Controller
             $item->fill($data);
             $item->save();
 
-            return response()->json(['message' => 'Adjustment request created', 'request_id' => $req->id], 202);
+            return response()->json([
+                'message' => 'Quantity adjustment request created; stock changes after approval.',
+                'request_id' => $req->id,
+            ], 202);
         }
 
         $item->fill($data);
