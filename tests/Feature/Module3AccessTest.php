@@ -41,6 +41,7 @@ class Module3AccessTest extends TestCase
         $this->get('/inventory/status')->assertOk();
         $this->get('/inventory/qr/generate')
             ->assertOk()
+            ->assertSee('Generate QR')
             ->assertSee('Print QR Codes')
             ->assertSee('window.print()', false)
             ->assertSee('@media print', false);
