@@ -25,5 +25,6 @@
             @endforeach
         </tbody>
     </table>
+    @include('reports.report-footer')
 </body>
 </html>

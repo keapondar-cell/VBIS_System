@@ -21,5 +21,6 @@
         <thead><tr>@foreach($headings as $heading)<th>{{ ucfirst(str_replace('_', ' ', $heading)) }}</th>@endforeach</tr></thead>
         <tbody>@foreach($rows as $row)<tr>@foreach($row as $value)<td>{{ $value }}</td>@endforeach</tr>@endforeach</tbody>
     </table>
+    @include('reports.report-footer')
 </body>
 </html>
