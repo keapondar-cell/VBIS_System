@@ -11,7 +11,6 @@
                         <h3 class="text-lg font-bold text-gray-900">Borrowed Item Information</h3>
                         <p class="text-sm text-gray-600">This QR record includes the item details and the borrower information.</p>
                     </div>
-                    <a href="{{ route('inventory.qr.scan') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Scan Again</a>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

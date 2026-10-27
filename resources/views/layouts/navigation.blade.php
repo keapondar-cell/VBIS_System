@@ -43,7 +43,6 @@
         <x-nav-link class="school-sidebar-link" :href="route('inventory.items.list')" :active="request()->routeIs('inventory.items.*')"><span class="school-sidebar-icon">▦</span>{{ __('Inventory') }}</x-nav-link>
         <x-nav-link class="school-sidebar-link" :href="route('inventory.issues.list')" :active="request()->routeIs('inventory.issues.*')"><span class="school-sidebar-icon">▣</span>{{ __('Requests') }}</x-nav-link>
         <x-nav-link class="school-sidebar-link" :href="route('inventory.transactions.list')" :active="request()->routeIs('inventory.transactions.*')"><span class="school-sidebar-icon">↔</span>{{ __('Transactions') }}</x-nav-link>
-        <x-nav-link class="school-sidebar-link" :href="route('inventory.qr.scan')" :active="request()->routeIs('inventory.qr.scan')"><span class="school-sidebar-icon">▧</span>{{ __('QR Scanner') }}</x-nav-link>
         @if(auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian())
             <x-nav-link class="school-sidebar-link" :href="route('inventory.qr.generate')" :active="request()->routeIs('inventory.qr.generate')"><span class="school-sidebar-icon">▧</span>{{ __('Generate QR') }}</x-nav-link>
         @endif
@@ -64,7 +63,6 @@
             <a href="{{ route('inventory.items.list') }}">Inventory</a>
             <a href="{{ route('inventory.issues.list') }}">Requests</a>
             <a href="{{ route('inventory.transactions.list') }}">Transactions</a>
-            <a href="{{ route('inventory.qr.scan') }}">QR Scanner</a>
             @if(auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian())<a href="{{ route('inventory.qr.generate') }}">Generate QR</a>@endif
             @if(auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian())<a href="{{ route('inventory.reports.menu') }}">Reports</a>@endif
             @if(auth()->user()->isAdmin())<a href="{{ route('admin.users') }}">Users</a>@endif

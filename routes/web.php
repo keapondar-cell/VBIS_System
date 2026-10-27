@@ -83,7 +83,6 @@ Route::prefix('inventory')->middleware('auth')->name('inventory.')->group(functi
     Route::get('status', [InventoryMonitoringController::class, 'statusView'])->name('status');
     Route::get('low-stock', [InventoryMonitoringController::class, 'lowStockView'])->name('low_stock');
     Route::get('qr/generate', [InventoryMonitoringController::class, 'qrGenerateView'])->name('qr.generate');
-    Route::get('qr/scan', [InventoryMonitoringController::class, 'qrScanView'])->name('qr.scan');
     Route::get('qr/item/{id}', [InventoryMonitoringController::class, 'qrItemInformation'])->name('qr.item');
     Route::get('qr/borrow/{id}', [InventoryMonitoringController::class, 'borrowQrInformation'])->name('qr.borrow');
     Route::get('qr/borrow/{id}/image', [InventoryMonitoringController::class, 'generateBorrowQrImage'])->name('qr.borrow_image');

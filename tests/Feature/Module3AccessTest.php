@@ -33,7 +33,7 @@ class Module3AccessTest extends TestCase
             ->assertSee(route('register'));
     }
 
-    public function test_property_custodian_can_access_monitoring_and_qr_views(): void
+    public function test_property_custodian_can_access_monitoring_and_generate_qr_views(): void
     {
         $user = User::factory()->create(['role' => 'property_custodian']);
         $this->actingAs($user);
@@ -45,7 +45,7 @@ class Module3AccessTest extends TestCase
             ->assertSee('Print QR Codes')
             ->assertSee('window.print()', false)
             ->assertSee('@media print', false);
-        $this->get('/inventory/qr/scan')->assertOk();
+        $this->get('/inventory/qr/scan')->assertNotFound();
         $this->get('/inventory/transactions/history')->assertOk();
     }
 
@@ -60,13 +60,6 @@ class Module3AccessTest extends TestCase
             ->assertDontSee('Scan QR to Borrow')
             ->assertDontSee('Scan QR to Return');
 
-        $this->get('/inventory/qr/scan?action=borrow')
-            ->assertOk()
-            ->assertSee('Scan Item to Borrow')
-            ->assertDontSee('Quick Inventory Lookup')
-            ->assertDontSee('Lookup Item')
-            ->assertSee('scanAction = "borrow"', false);
-
         $this->get('/inventory/qr/item/'.$item->id.'?action=borrow')
             ->assertOk()
             ->assertSee('Borrow '.$item->name)
@@ -75,6 +68,7 @@ class Module3AccessTest extends TestCase
             ->assertDontSee('Recent History')
             ->assertDontSee('Scan QR to Borrow')
             ->assertDontSee('Scan QR to Return')
+            ->assertDontSee('Scan Again')
             ->assertSee('name="expected_return_at"', false)
             ->assertSee('required', false)
             ->assertSee('name="quantity"', false)
@@ -122,6 +116,7 @@ class Module3AccessTest extends TestCase
             ->assertSee('Return '.$item->name)
             ->assertDontSee('Item Details')
             ->assertDontSee('Recent History')
+            ->assertDontSee('Scan Again')
             ->assertSee('Confirm Return');
 
         $this->postJson('/inventory/transactions', [

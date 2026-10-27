@@ -399,20 +399,6 @@ class InventoryMonitoringController extends Controller
         return view('inventory.qr-generate', compact('items'));
     }
 
-    public function qrScanView(Request $request)
-    {
-        $user = auth()->user();
-        if (!$user || !($user->isAdmin() || $user->isPropertyCustodian() || $user->isTeacher())) {
-            abort(403, 'You are not authorized to access QR scanning.');
-        }
-
-        $action = in_array($request->query('action'), ['borrow', 'return'], true)
-            ? $request->query('action')
-            : null;
-
-        return view('inventory.qr-scan', compact('action'));
-    }
-
     public function qrItemInformation($id)
     {
         $item = Item::with(['transactions' => function ($query) {
