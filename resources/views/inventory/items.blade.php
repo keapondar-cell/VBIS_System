@@ -54,20 +54,26 @@
             @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
                 <button id="newItem" style="margin-left:12px"><span aria-hidden="true">＋</span> Add New Item</button>
             @endif
+            @if(auth()->user() && (auth()->user()->isTeacher() || auth()->user()->isAdmin()))
+                <a href="{{ route('inventory.qr.scan', ['action' => 'borrow']) }}" class="qr-btn" style="display:inline-block;margin:0 0 1rem 8px;text-decoration:none">Scan QR to Borrow</a>
+                <a href="{{ route('inventory.qr.scan', ['action' => 'return']) }}" class="qr-btn" style="display:inline-block;margin:0 0 1rem 8px;text-decoration:none">Scan QR to Return</a>
+            @elseif(auth()->user() && auth()->user()->isPropertyCustodian())
+                <a href="{{ route('inventory.qr.scan', ['action' => 'return']) }}" class="qr-btn" style="display:inline-block;margin:0 0 1rem 8px;text-decoration:none">Scan QR to Return</a>
+            @endif
             <form method="GET" action="{{ route('inventory.items.list') }}" class="items-search">
-                <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by item name, SKU, category, or department" aria-label="Search inventory items">
+                <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by item name, SKU, classification, or department" aria-label="Search inventory items">
                 <button type="submit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>Search</button>
                 @if(request('search'))<a href="{{ route('inventory.items.list') }}">Clear</a>@endif
             </form>
             <table>
                 <thead>
-                    <tr><th>Name</th><th>Category</th><th>Qty</th><th>Department</th><th>Status</th><th>Date Added</th><th>QR</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Classification</th><th>Qty</th><th>Department</th><th>Status</th><th>Date Added</th><th>QR</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 @foreach($items as $item)
                     <tr>
                         <td>{{ $item->name }}</td>
-                        <td>{{ $item->category ?? 'N/A' }}</td>
+                        <td>{{ $item->classification ?? $item->category ?? 'N/A' }}</td>
                         <td>{{ $item->quantity }}</td>
                         <td>{{ $item->location }}</td>
                         @php
@@ -107,9 +113,9 @@
             @endif
 
     <div id="qrModal" style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000">
-        <div class="qr-modal-content" style="background:#fff;padding:20px;border-radius:8px;text-align:center;max-width:400px">
-            <h3>QR Code</h3>
-            <img src="" alt="QR" style="max-width:300px;height:auto;margin:15px 0">
+        <div class="qr-modal-content" style="background:#fff;padding:20px;border-radius:8px;text-align:center;max-width:760px;max-height:90vh;overflow-y:auto">
+            <h3>Item QR Codes</h3>
+            <div class="qr-options" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:15px 0"></div>
             <button class="qr-modal-close" style="background:#6c757d;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:15px" onclick="document.getElementById('qrModal').style.display='none'">Close</button>
         </div>
     </div>
@@ -122,7 +128,7 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                     <div><label style="display:block;margin-bottom:4px"><strong>Name</strong> <input id="i_name" required style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>SKU</strong> <input id="i_sku" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
-                    <div><label style="display:block;margin-bottom:4px"><strong>Category</strong> <input id="i_category" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
+                    <div><label style="display:block;margin-bottom:4px"><strong>Classification</strong> <input id="i_classification" list="classificationOptions" placeholder="Consumable, Glassware, etc." style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label><datalist id="classificationOptions"><option value="Consumable"><option value="Glassware"><option value="Chemical"><option value="Equipment"><option value="Office Supply"></datalist></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>Quantity</strong> <input id="i_quantity" type="number" min="0" value="0" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
                     <div id="itemCreatedAtField"><label style="display:block;margin-bottom:4px"><strong>Date and Time Added</strong> <input id="i_created_at" type="datetime-local" value="{{ now('Asia/Manila')->format('Y-m-d\TH:i') }}" required style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
                     <div><label style="display:block;margin-bottom:4px"><strong>Department</strong> <select id="i_location" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"><option value="">Select department</option><option value="Library">Library</option><option value="Computer Lab">Computer Lab</option><option value="Science Lab">Science Lab</option><option value="JHS Department">JHS Department</option><option value="SHS Department">SHS Department</option></select></label></div>
@@ -154,7 +160,7 @@
             document.getElementById('item_id_field').value='';
             document.getElementById('itemCreatedAtField').style.display='';
             document.getElementById('i_created_at').disabled=false;
-            ['i_name','i_sku','i_category','i_quantity','i_description','i_status'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+            ['i_name','i_sku','i_classification','i_quantity','i_description','i_status'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
             document.getElementById('itemMessage').textContent='';
             resetDepartmentOptions();
             document.getElementById('i_quantity').value='0';
@@ -166,10 +172,12 @@
     document.getElementById('itemForm').addEventListener('submit', async (e)=>{
         e.preventDefault();
         const id = document.getElementById('item_id_field').value;
+        const classification = document.getElementById('i_classification').value || null;
         const payload = { 
             name: document.getElementById('i_name').value, 
             sku: document.getElementById('i_sku').value || null,
-            category: document.getElementById('i_category').value || null,
+            category: classification,
+            classification: classification,
             quantity: Number(document.getElementById('i_quantity').value||0), 
             location: document.getElementById('i_location').value,
             description: document.getElementById('i_description').value || null,
@@ -220,7 +228,7 @@
             .then(r=>r.json())
             .then(item=>{
                 document.getElementById('i_sku').value = item.sku || '';
-                document.getElementById('i_category').value = item.category || '';
+                document.getElementById('i_classification').value = item.classification || item.category || '';
                 document.getElementById('i_description').value = item.description || '';
                 document.getElementById('i_status').value = item.status || 'available';
             });
@@ -233,28 +241,42 @@
     }
 
     async function generateQR(id, itemName) {
-        const imageUrl = '/inventory/items/'+id+'/qr-image';
-        try {
-            const res = await fetch(imageUrl, {headers: {'Accept': 'image/svg+xml'}});
-            if (!res.ok) throw new Error('QR request failed');
+        const qrModal = document.getElementById('qrModal');
+        const options = qrModal.querySelector('.qr-options');
+        const qrTypes = [
+            {label: 'Item Info', action: null},
+            {label: 'Scan to Borrow', action: 'borrow'},
+            {label: 'Scan to Return', action: 'return'}
+        ];
+        options.replaceChildren();
 
-            const modal = document.getElementById('qrModal');
-            const modalContent = document.querySelector('.qr-modal-content');
-            if(!modal) {
-                const newModal = document.createElement('div');
-                newModal.id = 'qrModal';
-                newModal.style.cssText = 'display:flex;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000';
-                newModal.innerHTML = '<div class="qr-modal-content" style="background:#fff;padding:20px;border-radius:8px;text-align:center;max-width:400px"><h3>QR Code for ' + itemName + '</h3><img src="' + imageUrl + '" alt="QR" style="max-width:300px;height:auto;margin:15px 0"><button class="qr-modal-close" style="background:#6c757d;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:15px" onclick="document.getElementById(\'qrModal\').style.display=\'none\'">Close</button></div>';
-                document.body.appendChild(newModal);
-            } else {
-                const img = modal.querySelector('img');
-                const heading = modal.querySelector('h3');
-                if(img) img.src = imageUrl;
-                if(heading) heading.textContent = 'QR Code for ' + itemName;
-                modal.style.display = 'flex';
-            }
-            document.getElementById('qrModal').style.display = 'flex';
+        qrTypes.forEach(({label, action}) => {
+            const card = document.createElement('a');
+            const imageUrl = '/inventory/items/'+id+'/qr-image'+(action ? '?action='+encodeURIComponent(action) : '');
+            card.href = imageUrl;
+            card.target = '_blank';
+            card.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;border:1px solid #d8e5e8;border-radius:8px;color:#123b5d;text-decoration:none';
+
+            const image = document.createElement('img');
+            image.src = imageUrl;
+            image.alt = label+' QR code for '+itemName;
+            image.style.cssText = 'width:180px;max-width:100%;height:auto';
+
+            const title = document.createElement('strong');
+            title.textContent = label;
+            card.append(image, title);
+            options.appendChild(card);
+        });
+
+        try {
+            const imageUrls = qrTypes.map(({action}) => '/inventory/items/'+id+'/qr-image'+(action ? '?action='+encodeURIComponent(action) : ''));
+            const responses = await Promise.all(imageUrls.map(url => fetch(url, {headers: {'Accept': 'image/svg+xml'}})));
+            if (responses.some(response => !response.ok)) throw new Error('QR request failed');
+
+            qrModal.querySelector('h3').textContent = 'QR Codes for '+itemName;
+            qrModal.style.display = 'flex';
         } catch (error) {
+            options.replaceChildren();
             alert('Unable to generate QR code. Please try again.');
         }
     }

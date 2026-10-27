@@ -104,8 +104,8 @@ class InventoryMonitoringController extends Controller
         if ($format === 'excel') {
             return $this->downloadSpreadsheetXlsx(
                 'Inventory Items',
-                ['id', 'sku', 'name', 'category', 'location', 'quantity', 'status', 'qr_code', 'created_at'],
-                $items->map(fn ($item) => [$item->id, $item->sku, $item->name, $item->category, $item->location, $item->quantity, $item->status, $item->qr_code, $item->created_at])->all(),
+                ['id', 'sku', 'name', 'classification', 'location', 'quantity', 'status', 'qr_code', 'created_at'],
+                $items->map(fn ($item) => [$item->id, $item->sku, $item->name, $item->classification ?? $item->category, $item->location, $item->quantity, $item->status, $item->qr_code, $item->created_at])->all(),
                 'inventory_items_'.now()->format('Ymd_His').'.xlsx'
             );
         }
@@ -118,14 +118,14 @@ class InventoryMonitoringController extends Controller
         // Fallback to CSV
         $response = new StreamedResponse(function () use ($items) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['id', 'sku', 'name', 'category', 'location', 'quantity', 'status', 'qr_code', 'created_at']);
+            fputcsv($handle, ['id', 'sku', 'name', 'classification', 'location', 'quantity', 'status', 'qr_code', 'created_at']);
 
             foreach ($items as $i) {
                 fputcsv($handle, [
                     $i->id,
                     $i->sku,
                     $i->name,
-                    $i->category,
+                    $i->classification ?? $i->category,
                     $i->location,
                     $i->quantity,
                     $i->status,
@@ -272,12 +272,18 @@ class InventoryMonitoringController extends Controller
         return response()->json($items);
     }
 
-    public function generateQrImage($id)
+    public function generateQrImage(Request $request, $id)
     {
         $item = Item::findOrFail($id);
         $item->qr_code ??= 'VBIS-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(16));
         $item->save();
-        $text = url('/inventory/qr/item/'.$id.'?code='.urlencode($item->qr_code));
+
+        $action = $request->query('action');
+        $query = ['code' => $item->qr_code];
+        if (in_array($action, ['borrow', 'return'], true)) {
+            $query['action'] = $action;
+        }
+        $text = route('inventory.qr.item', ['id' => $item->id] + $query);
         $qrCode = new \Endroid\QrCode\QrCode(
             data: $text,
             encoding: new \Endroid\QrCode\Encoding\Encoding('UTF-8'),
@@ -298,7 +304,6 @@ class InventoryMonitoringController extends Controller
         $item = Item::findOrFail($id);
             $item->qr_code ??= 'VBIS-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(16));
             $item->save();
-            $text = url('/inventory/qr/item/'.$id.'?code='.urlencode($item->qr_code));
         $img = '<img src="'.route('inventory.items.qr_image', $item->id).'" alt="QR for item '.$item->id.'">';
         return response($img, 200)->header('Content-Type', 'text/html');
     }
@@ -394,14 +399,18 @@ class InventoryMonitoringController extends Controller
         return view('inventory.qr-generate', compact('items'));
     }
 
-    public function qrScanView()
+    public function qrScanView(Request $request)
     {
         $user = auth()->user();
         if (!$user || !($user->isAdmin() || $user->isPropertyCustodian() || $user->isTeacher())) {
             abort(403, 'You are not authorized to access QR scanning.');
         }
 
-        return view('inventory.qr-scan');
+        $action = in_array($request->query('action'), ['borrow', 'return'], true)
+            ? $request->query('action')
+            : null;
+
+        return view('inventory.qr-scan', compact('action'));
     }
 
     public function qrItemInformation($id)
@@ -411,13 +420,34 @@ class InventoryMonitoringController extends Controller
         }, 'transactions.user'])->findOrFail($id);
 
         $user = auth()->user();
+        $activeBorrows = collect();
+        if ($user && ($user->isTeacher() || $user->isAdmin() || $user->isPropertyCustodian())) {
+            $activeBorrows = InventoryTransaction::with('user')
+                ->where('item_id', $item->id)
+                ->where('transaction_type', 'borrow')
+                ->where('status', 'approved')
+                ->whereNull('returned_at')
+                ->when($user->isTeacher(), fn ($query) => $query->where('user_id', $user->id))
+                ->orderByDesc('created_at')
+                ->get()
+                ->unique('user_id')
+                ->values();
+        }
+
         if ($user && $user->isTeacher()) {
             $item->transactions = $item->transactions->filter(function ($tx) use ($user) {
                 return $tx->user_id === $user->id || $tx->transaction_type !== 'admin';
             });
         }
 
-        return view('inventory.qr-item-information', compact('item'));
+        $requestedAction = request()->query('action');
+        $action = $user && in_array($requestedAction, ['borrow', 'return'], true)
+            ? $requestedAction
+            : null;
+        $canBorrow = $user && ($user->isTeacher() || $user->isAdmin());
+        $canManageReturns = $user && ($user->isAdmin() || $user->isPropertyCustodian());
+
+        return view('inventory.qr-item-information', compact('item', 'activeBorrows', 'action', 'canBorrow', 'canManageReturns'));
     }
 
     public function borrowQrInformation($id)
@@ -508,11 +538,11 @@ class InventoryMonitoringController extends Controller
                 $headings = ['id', 'item_code', 'item_name', 'quantity_issued', 'recipient', 'status', 'created_at'];
                 $title = 'Issuance Report';
             } else {
-                $rows = Item::orderBy('name')->get()->map(fn ($row) => [
-                    $row->id, $row->sku, $row->name, $row->category, $row->description,
+                $rows = $this->inventoryItemsQuery($request)->orderBy('name')->get()->map(fn ($row) => [
+                    $row->id, $row->sku, $row->name, $row->classification ?? $row->category, $row->description,
                     $row->quantity, $row->location, $row->status, $row->qr_code,
                 ])->all();
-                $headings = ['id', 'sku', 'name', 'category', 'description', 'quantity', 'location', 'status', 'qr_code'];
+                $headings = ['id', 'sku', 'name', 'classification', 'description', 'quantity', 'location', 'status', 'qr_code'];
                 $title = 'Inventory Status Report';
             }
 
@@ -598,19 +628,41 @@ class InventoryMonitoringController extends Controller
         return view('inventory.reports-menu');
     }
 
+    private function inventoryItemsQuery(Request $request)
+    {
+        $query = Item::query();
+        $classification = $request->input('classification', $request->input('category'));
+
+        if (filled($classification)) {
+            $query->where('category', $classification);
+        }
+        if ($request->filled('location')) {
+            $query->where('location', $request->input('location'));
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('sku', 'like', '%'.$search.'%');
+            });
+        }
+
+        return $query;
+    }
+
     public function inventoryReportView(Request $request)
     {
         if (!$this->canAccessReports()) {
             abort(403, 'You are not authorized to access inventory reports.');
         }
 
-        $query = Item::query();
-        if ($request->filled('category')) { $query->where('category', $request->input('category')); }
-        if ($request->filled('location')) { $query->where('location', $request->input('location')); }
-        if ($request->filled('status')) { $query->where('status', $request->input('status')); }
-        if ($request->filled('search')) { $query->where(function ($q) use ($request) { $q->where('name', 'like', '%'.$request->input('search').'%')->orWhere('sku', 'like', '%'.$request->input('search').'%'); }); }
-
-        $items = $query->orderBy('updated_at', 'desc')->paginate(20)->withQueryString();
+        $items = $this->inventoryItemsQuery($request)
+            ->orderBy('updated_at', 'desc')
+            ->paginate(20)
+            ->withQueryString();
         $categories = Item::select('category')->whereNotNull('category')->distinct()->orderBy('category')->pluck('category');
         $locations = Item::select('location')->whereNotNull('location')->distinct()->orderBy('location')->pluck('location');
         $statuses = ['available', 'low stock', 'out of stock', 'borrowed', 'issued', 'returned'];

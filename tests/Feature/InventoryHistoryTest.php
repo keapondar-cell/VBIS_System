@@ -68,6 +68,11 @@ class InventoryHistoryTest extends TestCase
         $borrow->assertCreated();
         $borrowId = $borrow->json('id');
 
+        $approver = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($approver)
+            ->post('/inventory/transactions/'.$borrowId.'/approve')
+            ->assertOk();
+
         $return = $this->actingAs($teacher)->post('/inventory/transactions', [
             'item_id' => $item->id,
             'transaction_type' => 'return',

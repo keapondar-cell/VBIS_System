@@ -44,6 +44,100 @@ class Module3AccessTest extends TestCase
         $this->get('/inventory/transactions/history')->assertOk();
     }
 
+    public function test_teacher_can_scan_an_item_qr_to_submit_a_borrow_request(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create(['quantity' => 5]);
+
+        $this->actingAs($teacher)
+            ->get('/inventory/items/list')
+            ->assertOk()
+            ->assertSee('Scan QR to Borrow')
+            ->assertSee('action=borrow')
+            ->assertSee('Scan QR to Return')
+            ->assertSee('action=return');
+
+        $this->get('/inventory/qr/scan?action=borrow')
+            ->assertOk()
+            ->assertSee('scanAction = "borrow"', false);
+
+        $this->get('/inventory/qr/item/'.$item->id.'?action=borrow')
+            ->assertOk()
+            ->assertSee('Borrow '.$item->name)
+            ->assertSee('Submit Borrow Request');
+
+        $this->postJson('/inventory/transactions', [
+            'item_id' => $item->id,
+            'transaction_type' => 'borrow',
+            'quantity' => 2,
+            'purpose' => 'For classroom activity',
+        ])->assertCreated()
+            ->assertJsonPath('status', 'pending');
+
+        $this->assertSame(5, $item->fresh()->quantity);
+    }
+
+    public function test_teacher_can_scan_an_item_qr_to_return_an_active_borrow(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create(['quantity' => 7]);
+        InventoryTransaction::factory()->create([
+            'item_id' => $item->id,
+            'user_id' => $teacher->id,
+            'transaction_type' => 'borrow',
+            'quantity' => 3,
+            'status' => 'approved',
+            'returned_at' => null,
+        ]);
+
+        $this->actingAs($teacher)
+            ->get('/inventory/qr/item/'.$item->id.'?action=return')
+            ->assertOk()
+            ->assertSee('Return '.$item->name)
+            ->assertSee('Confirm Return');
+
+        $this->postJson('/inventory/transactions', [
+            'item_id' => $item->id,
+            'user_id' => $teacher->id,
+            'transaction_type' => 'return',
+            'quantity' => 3,
+            'condition' => 'Good',
+        ])->assertCreated();
+
+        $this->assertSame(10, $item->fresh()->quantity);
+        $this->assertDatabaseHas('inventory_transactions', [
+            'item_id' => $item->id,
+            'user_id' => $teacher->id,
+            'transaction_type' => 'return',
+            'status' => 'returned',
+        ]);
+    }
+
+    public function test_item_qr_codes_include_item_info_borrow_and_return_options(): void
+    {
+        $custodian = User::factory()->create(['role' => 'property_custodian']);
+        $item = Item::factory()->create(['name' => 'Lab Beaker']);
+
+        $this->actingAs($custodian)
+            ->get('/inventory/qr/generate')
+            ->assertOk()
+            ->assertSee('Item Info')
+            ->assertSee('Scan to Borrow')
+            ->assertSee('Scan to Return')
+            ->assertSee('action=borrow')
+            ->assertSee('action=return');
+
+        $itemInfoQr = $this->get('/inventory/items/'.$item->id.'/qr-image');
+        $borrowQr = $this->get('/inventory/items/'.$item->id.'/qr-image?action=borrow');
+        $returnQr = $this->get('/inventory/items/'.$item->id.'/qr-image?action=return');
+
+        $itemInfoQr->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
+        $borrowQr->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
+        $returnQr->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
+        $this->assertNotSame($itemInfoQr->getContent(), $borrowQr->getContent());
+        $this->assertNotSame($borrowQr->getContent(), $returnQr->getContent());
+    }
+
     public function test_teacher_has_restricted_access_to_monitoring_and_audit_views(): void
     {
         $user = User::factory()->create(['role' => 'teacher']);

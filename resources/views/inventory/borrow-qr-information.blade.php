@@ -20,7 +20,7 @@
                         <dl class="space-y-2 text-sm">
                             <div><dt class="text-gray-500">Item Code</dt><dd class="font-medium">{{ $transaction->item->sku ?? 'ITM-'.$transaction->item_id }}</dd></div>
                             <div><dt class="text-gray-500">Item Name</dt><dd class="font-medium">{{ $transaction->item->name }}</dd></div>
-                            <div><dt class="text-gray-500">Category</dt><dd>{{ $transaction->item->category ?? 'N/A' }}</dd></div>
+                            <div><dt class="text-gray-500">Classification</dt><dd>{{ $transaction->item->classification ?? $transaction->item->category ?? 'N/A' }}</dd></div>
                             <div><dt class="text-gray-500">Current Quantity</dt><dd>{{ $transaction->item->quantity }}</dd></div>
                             <div><dt class="text-gray-500">Location</dt><dd>{{ $transaction->item->location ?? 'N/A' }}</dd></div>
                             <div><dt class="text-gray-500">Borrow Quantity</dt><dd>{{ $transaction->quantity }}</dd></div>

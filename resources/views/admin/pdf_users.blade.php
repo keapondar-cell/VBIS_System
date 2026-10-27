@@ -14,8 +14,9 @@
     </style>
 </head>
 <body>
+    @include('reports.school-header')
     <h1>User Directory</h1>
-    <p>Victor Bernal Provincial High School | Generated {{ now()->format('M d, Y h:i A') }}</p>
+    <p>Generated {{ now()->format('M d, Y h:i A') }}</p>
     <table>
         <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th></tr></thead>
         <tbody>

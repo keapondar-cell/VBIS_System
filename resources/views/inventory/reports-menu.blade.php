@@ -19,6 +19,7 @@
     <div class="reports-page py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="reports-shell bg-white shadow sm:rounded-lg p-6">
+                @include('reports.school-header')
                 <div class="mb-8">
                     <h3 class="reports-heading text-lg font-bold text-gray-900 mb-2">Available Reports</h3>
                     <p class="reports-description text-sm text-gray-600">Select a report to view detailed information about your inventory.</p>

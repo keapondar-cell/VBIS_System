@@ -55,6 +55,7 @@
         const lookupBtn = document.getElementById('lookupBtn');
         const startCamera = document.getElementById('startCamera');
         const stopCamera = document.getElementById('stopCamera');
+        const scanAction = @json($action);
 
         function openItemRecord(value) {
             const normalized = value.trim();
@@ -72,7 +73,12 @@
             const itemMatch = normalized.match(/\/inventory\/qr\/item\/(\d+)/i);
             const itemId = itemMatch ? itemMatch[1] : normalized.toString().replace(/[^0-9]/g, '');
             if (itemId) {
-                window.location.href = '/inventory/qr/item/' + itemId;
+                let qrAction = scanAction;
+                const scannedUrl = new URL(normalized, window.location.origin);
+                const encodedAction = scannedUrl.searchParams.get('action');
+                if (encodedAction === 'borrow' || encodedAction === 'return') qrAction = encodedAction;
+                const actionQuery = qrAction ? '?action=' + encodeURIComponent(qrAction) : '';
+                window.location.href = '/inventory/qr/item/' + itemId + actionQuery;
                 return;
             }
 

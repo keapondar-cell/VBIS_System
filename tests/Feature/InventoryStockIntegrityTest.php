@@ -77,6 +77,30 @@ class InventoryStockIntegrityTest extends TestCase
             ->assertSee('/inventory/adjustments/list');
     }
 
+    public function test_issuing_transaction_decreases_item_stock(): void
+    {
+        $custodian = User::factory()->create(['role' => 'property_custodian']);
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create(['quantity' => 10]);
+
+        $response = $this->actingAs($custodian)->postJson('/inventory/transactions', [
+            'item_id' => $item->id,
+            'user_id' => $teacher->id,
+            'transaction_type' => 'issue',
+            'quantity' => 3,
+            'notes' => 'Classroom supplies',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('transaction_type', 'issue')
+            ->assertJsonPath('quantity', 3)
+            ->assertJsonPath('quantity_change', -3)
+            ->assertJsonPath('old_quantity', 10)
+            ->assertJsonPath('new_quantity', 7);
+
+        $this->assertSame(7, $item->fresh()->quantity);
+    }
+
     public function test_approved_borrow_deducts_stock_once_and_return_restores_it(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);

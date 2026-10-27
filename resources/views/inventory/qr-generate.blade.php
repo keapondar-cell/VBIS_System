@@ -25,18 +25,24 @@
                                 <span class="inline-flex px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">{{ $item->quantity }} qty</span>
                             </div>
 
-                            <div class="flex justify-center mb-3">
-                                <img src="{{ route('inventory.items.qr_image', $item->id) }}" alt="QR code for {{ $item->name }}" class="w-32 h-32 border rounded-md bg-white p-2">
-                            </div>
-
                             <div class="text-xs text-gray-600 mb-3">
                                 <div><strong>Location:</strong> {{ $item->location ?? 'N/A' }}</div>
                                 <div><strong>Status:</strong> {{ ucfirst($item->status ?? 'available') }}</div>
                             </div>
 
-                            <div class="flex gap-2">
-                                <a href="{{ route('inventory.items.qr_image', $item->id) }}" target="_blank" class="inline-flex flex-1 justify-center px-3 py-2 bg-blue-600 text-white rounded-md text-xs">Preview QR</a>
-                                <a href="{{ route('inventory.qr.item', $item->id) }}" class="inline-flex flex-1 justify-center px-3 py-2 border border-gray-300 rounded-md text-xs">Item Info</a>
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <a href="{{ route('inventory.items.qr_image', $item->id) }}" target="_blank" class="rounded-md border p-2">
+                                    <img src="{{ route('inventory.items.qr_image', $item->id) }}" alt="Item information QR for {{ $item->name }}" class="mx-auto mb-2 h-24 w-24 bg-white">
+                                    <span class="text-xs font-medium text-gray-700">Item Info</span>
+                                </a>
+                                <a href="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'borrow']) }}" target="_blank" class="rounded-md border p-2">
+                                    <img src="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'borrow']) }}" alt="Scan to Borrow QR for {{ $item->name }}" class="mx-auto mb-2 h-24 w-24 bg-white">
+                                    <span class="text-xs font-medium text-blue-700">Scan to Borrow</span>
+                                </a>
+                                <a href="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'return']) }}" target="_blank" class="rounded-md border p-2">
+                                    <img src="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'return']) }}" alt="Scan to Return QR for {{ $item->name }}" class="mx-auto mb-2 h-24 w-24 bg-white">
+                                    <span class="text-xs font-medium text-green-700">Scan to Return</span>
+                                </a>
                             </div>
                         </div>
                     @empty

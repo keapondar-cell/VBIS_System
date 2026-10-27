@@ -14,13 +14,14 @@
     </style>
 </head>
 <body>
+    @include('reports.school-header')
     <h1>Inventory Items</h1>
-    <p>Victor Bernal Provincial High School | Generated {{ now()->format('M d, Y h:i A') }}</p>
+    <p>Generated {{ now()->format('M d, Y h:i A') }}</p>
     <table>
-        <thead><tr><th>ID</th><th>SKU</th><th>Name</th><th>Category</th><th>Location</th><th>Qty</th><th>Status</th></tr></thead>
+        <thead><tr><th>ID</th><th>SKU</th><th>Name</th><th>Classification</th><th>Location</th><th>Qty</th><th>Status</th></tr></thead>
         <tbody>
             @foreach($items as $item)
-                <tr><td>{{ $item->id }}</td><td>{{ $item->sku }}</td><td>{{ $item->name }}</td><td>{{ $item->category }}</td><td>{{ $item->location }}</td><td>{{ $item->quantity }}</td><td>{{ $item->status }}</td></tr>
+                <tr><td>{{ $item->id }}</td><td>{{ $item->sku }}</td><td>{{ $item->name }}</td><td>{{ $item->classification ?? $item->category }}</td><td>{{ $item->location }}</td><td>{{ $item->quantity }}</td><td>{{ $item->status }}</td></tr>
             @endforeach
         </tbody>
     </table>

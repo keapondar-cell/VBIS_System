@@ -14,8 +14,9 @@
     </style>
 </head>
 <body>
+    @include('reports.school-header')
     <h1>Inventory Transactions</h1>
-    <p>Victor Bernal Provincial High School | Generated {{ now()->format('M d, Y h:i A') }}</p>
+    <p>Generated {{ now()->format('M d, Y h:i A') }}</p>
     <table>
         <thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Due</th><th>Returned</th><th>Notes</th><th>Date</th></tr></thead>
         <tbody>

@@ -157,23 +157,13 @@ class InventoryHistoryController extends Controller
             $openBorrow = InventoryTransaction::where('item_id', $data['item_id'])
                 ->where('transaction_type', 'borrow')
                 ->where('user_id', $data['user_id'])
-                ->where('status', '!=', 'returned')
-                ->where(function ($query) {
-                    $query->whereNull('returned_at')->orWhere('returned_at', '<', now());
-                })
+                ->where('status', 'approved')
+                ->whereNull('returned_at')
                 ->latest()
                 ->first();
 
             if (! $openBorrow) {
                 return response()->json(['error' => 'No active borrow record exists for this item.'], 422);
-            }
-
-            $alreadyReturned = InventoryTransaction::where('related_transaction_id', $openBorrow->id)
-                ->where('transaction_type', 'return')
-                ->exists();
-
-            if ($alreadyReturned) {
-                return response()->json(['error' => 'This borrow has already been returned.'], 422);
             }
 
             $data['related_transaction_id'] = $openBorrow->id;
@@ -213,6 +203,21 @@ class InventoryHistoryController extends Controller
                 $transaction->user?->notify(new InventoryTransactionNotification($transaction, 'returned'));
                 User::whereIn('role', ['admin', 'property_custodian'])->get()
                     ->each(fn ($manager) => $manager->notify(new InventoryTransactionNotification($transaction, 'returned')));
+            } elseif ($type === 'issue') {
+                $transaction = app(InventoryService::class)->issue(
+                    (int) $data['item_id'],
+                    (int) $data['quantity'],
+                    [
+                        'user_id' => $data['user_id'] ?? null,
+                        'department_id' => $data['department_id'] ?? null,
+                        'performed_by' => $request->user()?->id,
+                        'affected_user_id' => $data['user_id'] ?? null,
+                        'requested_for_at' => $data['requested_for_at'] ?? null,
+                        'reason' => $data['purpose'] ?? 'Inventory issue',
+                        'notes' => $data['notes'] ?? null,
+                    ]
+                );
+                $transaction->load('item');
             } else {
                 $transaction = InventoryTransaction::create($data);
             }

@@ -6,6 +6,7 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow sm:rounded-lg p-6">
+                @include('reports.school-header')
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
                     <div>
                         <h3 class="text-lg font-bold text-gray-900">Issued Items Summary</h3>

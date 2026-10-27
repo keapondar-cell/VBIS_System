@@ -6,6 +6,7 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow sm:rounded-lg p-6">
+                @include('reports.school-header')
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
                     <div>
                         <h3 class="text-lg font-bold text-gray-900">Item Returns Summary</h3>
@@ -32,7 +33,7 @@
                                 <th class="px-3 py-2 text-left">Returner</th>
                                 <th class="px-3 py-2 text-left">Item</th>
                                 <th class="px-3 py-2 text-left">Item Code</th>
-                                <th class="px-3 py-2 text-left">Category</th>
+                                <th class="px-3 py-2 text-left">Classification</th>
                                 <th class="px-3 py-2 text-left">Quantity</th>
                                 <th class="px-3 py-2 text-left">Return Date</th>
                                 <th class="px-3 py-2 text-left">Notes</th>
@@ -44,7 +45,7 @@
                                     <td class="px-3 py-2">{{ $report->user->name ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ $report->item->name ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ $report->item->sku ?? 'ITM-'.$report->item_id }}</td>
-                                    <td class="px-3 py-2">{{ $report->item->category ?? 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ $report->item->classification ?? $report->item->category ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ $report->quantity }}</td>
                                     <td class="px-3 py-2">{{ $report->created_at ? $report->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
                                     <td class="px-3 py-2 text-xs">{{ $report->notes ?? 'No notes' }}</td>

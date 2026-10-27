@@ -6,23 +6,24 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow sm:rounded-lg p-6">
+                @include('reports.school-header')
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
                     <div>
                         <h3 class="text-lg font-bold text-gray-900">Inventory Status Report</h3>
                         <p class="text-sm text-gray-600">Current inventory data retrieved from the database.</p>
                     </div>
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <a href="{{ route('inventory.reports.export', ['type' => 'inventory', 'format' => 'csv']) }}" style="display:inline-flex; align-items:center; justify-content:center; width:130px; height:42px; background:#0d6c3f; color:#ffffff; font-size:16px; font-weight:700; text-decoration:none; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); line-height:1; border:0;">Export CSV</a>
-                        <a href="{{ route('inventory.reports.export', ['type' => 'inventory', 'format' => 'pdf']) }}" style="display:inline-flex; align-items:center; justify-content:center; width:130px; height:42px; background:#d63c31; color:#ffffff; font-size:16px; font-weight:700; text-decoration:none; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); line-height:1; border:0;">Export PDF</a>
+                        <a href="{{ route('inventory.reports.export', array_merge(request()->only(['search', 'classification', 'category', 'location', 'status']), ['type' => 'inventory', 'format' => 'csv'])) }}" style="display:inline-flex; align-items:center; justify-content:center; width:130px; height:42px; background:#0d6c3f; color:#ffffff; font-size:16px; font-weight:700; text-decoration:none; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); line-height:1; border:0;">Export CSV</a>
+                        <a href="{{ route('inventory.reports.export', array_merge(request()->only(['search', 'classification', 'category', 'location', 'status']), ['type' => 'inventory', 'format' => 'pdf'])) }}" style="display:inline-flex; align-items:center; justify-content:center; width:130px; height:42px; background:#d63c31; color:#ffffff; font-size:16px; font-weight:700; text-decoration:none; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); line-height:1; border:0;">Export PDF</a>
                     </div>
                 </div>
 
                 <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search item" class="border rounded-md px-3 py-2 md:col-span-2">
-                    <select name="category" class="border rounded-md px-3 py-2">
-                        <option value="">All Categories</option>
+                    <select name="classification" class="border rounded-md px-3 py-2">
+                        <option value="">All Classifications</option>
                         @foreach($categories as $category)
-                            <option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>
+                            <option value="{{ $category }}" @selected(request('classification', request('category')) === $category)>{{ $category }}</option>
                         @endforeach
                     </select>
                     <select name="location" class="border rounded-md px-3 py-2">
@@ -49,7 +50,7 @@
                             <tr>
                                 <th class="px-3 py-2 text-left">Item Code</th>
                                 <th class="px-3 py-2 text-left">Item Name</th>
-                                <th class="px-3 py-2 text-left">Category</th>
+                                <th class="px-3 py-2 text-left">Classification</th>
                                 <th class="px-3 py-2 text-left">Description</th>
                                 <th class="px-3 py-2 text-left">Quantity</th>
                                 <th class="px-3 py-2 text-left">Location</th>
@@ -62,7 +63,7 @@
                                 <tr class="border-t border-gray-200">
                                     <td class="px-3 py-2">{{ $item->sku ?? 'ITM-'.$item->id }}</td>
                                     <td class="px-3 py-2">{{ $item->name }}</td>
-                                    <td class="px-3 py-2">{{ $item->category ?? 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ $item->classification ?? $item->category ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ $item->description ?? 'N/A' }}</td>
                                     <td class="px-3 py-2 font-semibold">{{ $item->quantity }}</td>
                                     <td class="px-3 py-2">{{ $item->location ?? 'N/A' }}</td>

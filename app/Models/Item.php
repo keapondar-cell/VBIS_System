@@ -14,11 +14,23 @@ class Item extends Model
         'sku', 'name', 'description', 'category', 'quantity', 'location', 'status', 'qr_code'
     ];
 
+    protected $appends = ['classification'];
+
     protected static function booted(): void
     {
         static::creating(function (Item $item): void {
             $item->qr_code ??= 'VBIS-'.Str::upper(Str::random(16));
         });
+    }
+
+    public function getClassificationAttribute(): ?string
+    {
+        return $this->attributes['category'] ?? null;
+    }
+
+    public function setClassificationAttribute($value): void
+    {
+        $this->attributes['category'] = $value;
     }
 
     public function transactions()

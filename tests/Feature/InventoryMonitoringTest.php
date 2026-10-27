@@ -146,6 +146,12 @@ class InventoryMonitoringTest extends TestCase
         $user = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($user)
+            ->get('/inventory/reports')
+            ->assertOk()
+            ->assertSee('Victor Bernal Provincial High School')
+            ->assertSee('data:image/jpeg;base64,', false);
+
+        $this->actingAs($user)
             ->get('/inventory/reports/export?type=inventory&format=pdf')
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
@@ -165,5 +171,65 @@ class InventoryMonitoringTest extends TestCase
             ->get('/inventory/reports/export?type=inventory&format=csv')
             ->assertOk()
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_inventory_report_exports_apply_selected_filters(): void
+    {
+        Item::factory()->create([
+            'name' => 'Filtered Consumable',
+            'sku' => 'FILTERED-1',
+            'category' => 'Consumable',
+            'location' => 'Science Lab',
+            'status' => 'available',
+        ]);
+        Item::factory()->create([
+            'name' => 'Other Classification',
+            'sku' => 'OTHER-1',
+            'category' => 'Glassware',
+            'location' => 'Science Lab',
+            'status' => 'available',
+        ]);
+        Item::factory()->create([
+            'name' => 'Other Location',
+            'sku' => 'OTHER-2',
+            'category' => 'Consumable',
+            'location' => 'Library',
+            'status' => 'available',
+        ]);
+        Item::factory()->create([
+            'name' => 'Other Status',
+            'sku' => 'OTHER-3',
+            'category' => 'Consumable',
+            'location' => 'Science Lab',
+            'status' => 'out_of_stock',
+        ]);
+
+        $user = User::factory()->create(['role' => 'admin']);
+        $filters = [
+            'classification' => 'Consumable',
+            'status' => 'available',
+            'location' => 'Science Lab',
+        ];
+
+        $this->actingAs($user)
+            ->get('/inventory/reports?'.http_build_query($filters))
+            ->assertOk()
+            ->assertSee('classification=Consumable')
+            ->assertSee('location=Science%20Lab');
+
+        $csv = $this->actingAs($user)
+            ->get('/inventory/reports/export?'.http_build_query($filters + ['type' => 'inventory', 'format' => 'csv']))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('FILTERED-1', $csv);
+        $this->assertStringNotContainsString('OTHER-1', $csv);
+        $this->assertStringNotContainsString('OTHER-2', $csv);
+        $this->assertStringNotContainsString('OTHER-3', $csv);
+
+        $this->actingAs($user)
+            ->get('/inventory/reports/export?'.http_build_query($filters + ['type' => 'inventory', 'format' => 'pdf']))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
     }
 }

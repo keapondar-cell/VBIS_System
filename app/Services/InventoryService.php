@@ -51,6 +51,7 @@ class InventoryService
                 'transaction_type' => 'borrow',
                 'quantity' => $quantity,
                 'related_transaction_id' => $meta['related_transaction_id'] ?? null,
+                'requested_for_at' => $meta['requested_for_at'] ?? null,
                 'expected_return_at' => $meta['expected_return_at'] ?? null,
                 'status' => $meta['status'] ?? 'pending',
                 'notes' => $meta['notes'] ?? null,
@@ -117,18 +118,10 @@ class InventoryService
                 ->where('item_id', $itemId)
                 ->where('transaction_type', 'borrow')
                 ->where('user_id', $meta['user_id'] ?? null)
-                ->whereNotNull('status')
-                ->where(function ($query) {
-                    $query->whereNull('returned_at')->orWhere('returned_at', '>=', now()->subMinute());
-                })
+                ->where('status', 'approved')
+                ->whereNull('returned_at')
                 ->orderByDesc('created_at')
                 ->first();
-
-            if ($borrow && $borrow->returned_at) {
-                throw ValidationException::withMessages([
-                    'quantity' => 'This borrow has already been returned.',
-                ]);
-            }
 
             if ($borrow && $quantity > (int) $borrow->quantity) {
                 throw ValidationException::withMessages([
@@ -245,6 +238,7 @@ class InventoryService
                 'old_quantity' => $oldQuantity,
                 'new_quantity' => $newQuantity,
                 'related_transaction_id' => $meta['related_transaction_id'] ?? null,
+                'requested_for_at' => $meta['requested_for_at'] ?? null,
                 'expected_return_at' => $meta['expected_return_at'] ?? null,
                 'returned_at' => $meta['returned_at'] ?? null,
                 'status' => $meta['status'] ?? 'approved',

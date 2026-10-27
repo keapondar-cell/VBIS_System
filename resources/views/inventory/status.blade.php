@@ -6,6 +6,7 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow sm:rounded-lg p-6">
+                @include('reports.school-header')
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
                     <div>
                         <h3 class="text-lg font-bold text-gray-900">Current Inventory Overview</h3>
@@ -17,7 +18,7 @@
                 <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search item or code" class="border rounded-md px-3 py-2">
                     <select name="category" class="border rounded-md px-3 py-2">
-                        <option value="">All Categories</option>
+                        <option value="">All Classifications</option>
                         @foreach($categories as $category)
                             <option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>
                         @endforeach
@@ -46,7 +47,7 @@
                             <tr>
                                 <th class="px-3 py-2 text-left">Item Code</th>
                                 <th class="px-3 py-2 text-left">Name</th>
-                                <th class="px-3 py-2 text-left">Category</th>
+                                <th class="px-3 py-2 text-left">Classification</th>
                                 <th class="px-3 py-2 text-left">Quantity</th>
                                 <th class="px-3 py-2 text-left">Location</th>
                                 <th class="px-3 py-2 text-left">Status</th>
@@ -59,7 +60,7 @@
                                 <tr class="border-t border-gray-200">
                                     <td class="px-3 py-2">{{ $item->sku ?? 'ITM-'.$item->id }}</td>
                                     <td class="px-3 py-2">{{ $item->name }}</td>
-                                    <td class="px-3 py-2">{{ $item->category ?? 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ $item->classification ?? $item->category ?? 'N/A' }}</td>
                                     <td class="px-3 py-2 font-semibold">{{ $item->quantity }}</td>
                                     <td class="px-3 py-2">{{ $item->location ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">
