@@ -1,4 +1,16 @@
 <x-app-layout>
+    <style>
+        @media print {
+            @page { margin: 10mm; }
+            body * { visibility: hidden !important; }
+            #qr-print-area, #qr-print-area * { visibility: visible !important; }
+            #qr-print-area { position: absolute; inset: 0; width: 100%; margin: 0; padding: 0; }
+            #qr-print-area .qr-item-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #64748b !important; box-shadow: none !important; }
+            #qr-print-area .qr-code-card { border: 1px solid #94a3b8 !important; color: #111827 !important; text-decoration: none !important; }
+            #qr-print-area .qr-code-card img { width: 25mm !important; height: 25mm !important; }
+            .qr-print-controls, .qr-pagination { display: none !important; }
+        }
+    </style>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Generate QR Code</h2>
     </x-slot>
@@ -9,14 +21,17 @@
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
                     <div>
                         <h3 class="text-lg font-bold text-gray-900">Inventory QR Labels</h3>
-                        <p class="text-sm text-gray-600">Each item uses a unique QR identifier linked to its database record.</p>
+                        <p class="text-sm text-gray-600">Each item has printable Item Info, Borrow, and Return QR codes.</p>
                     </div>
-                    <a href="{{ route('inventory.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Back to Dashboard</a>
+                    <div class="qr-print-controls flex flex-wrap gap-2">
+                        <button type="button" onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-green-700 text-white rounded-md hover:bg-green-800">Print QR Codes</button>
+                        <a href="{{ route('inventory.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Back to Dashboard</a>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div id="qr-print-area" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     @forelse($items as $item)
-                        <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="qr-item-card border border-gray-200 rounded-lg p-4">
                             <div class="flex items-center justify-between mb-3">
                                 <div>
                                     <div class="font-semibold">{{ $item->name }}</div>
@@ -31,15 +46,15 @@
                             </div>
 
                             <div class="grid grid-cols-3 gap-2 text-center">
-                                <a href="{{ route('inventory.items.qr_image', $item->id) }}" target="_blank" class="rounded-md border p-2">
+                                <a href="{{ route('inventory.items.qr_image', $item->id) }}" target="_blank" class="qr-code-card rounded-md border p-2">
                                     <img src="{{ route('inventory.items.qr_image', $item->id) }}" alt="Item information QR for {{ $item->name }}" class="mx-auto mb-2 h-24 w-24 bg-white">
                                     <span class="text-xs font-medium text-gray-700">Item Info</span>
                                 </a>
-                                <a href="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'borrow']) }}" target="_blank" class="rounded-md border p-2">
+                                <a href="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'borrow']) }}" target="_blank" class="qr-code-card rounded-md border p-2">
                                     <img src="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'borrow']) }}" alt="Scan to Borrow QR for {{ $item->name }}" class="mx-auto mb-2 h-24 w-24 bg-white">
                                     <span class="text-xs font-medium text-blue-700">Scan to Borrow</span>
                                 </a>
-                                <a href="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'return']) }}" target="_blank" class="rounded-md border p-2">
+                                <a href="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'return']) }}" target="_blank" class="qr-code-card rounded-md border p-2">
                                     <img src="{{ route('inventory.items.qr_image', ['id' => $item->id, 'action' => 'return']) }}" alt="Scan to Return QR for {{ $item->name }}" class="mx-auto mb-2 h-24 w-24 bg-white">
                                     <span class="text-xs font-medium text-green-700">Scan to Return</span>
                                 </a>
@@ -50,7 +65,7 @@
                     @endforelse
                 </div>
 
-                <div class="mt-4">
+                <div class="qr-pagination mt-4">
                     {{ $items->links() }}
                 </div>
             </div>
