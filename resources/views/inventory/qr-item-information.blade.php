@@ -65,9 +65,8 @@
                                 <label class="text-sm">Return date
                                     <input name="expected_return_at" type="date" min="{{ now()->addDay()->toDateString() }}" required class="mt-1 w-full border rounded-md px-3 py-2">
                                 </label>
-                                <label class="text-sm md:col-span-2">Purpose
-                                    <input name="purpose" type="text" minlength="5" maxlength="500" required class="mt-1 w-full border rounded-md px-3 py-2" placeholder="Why do you need to borrow this item?">
-                                </label>
+                                <input name="purpose" type="hidden" value="Borrow request submitted from item QR code">
+                                <p class="md:col-span-2 text-sm text-gray-600">Your request will be sent for approval. The item is borrowed once an administrator or property custodian approves it.</p>
                                 <div class="md:col-span-2"><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md">Submit Borrow Request</button></div>
                                 <p id="qrBorrowMessage" class="md:col-span-2 text-sm" role="status"></p>
                             </form>

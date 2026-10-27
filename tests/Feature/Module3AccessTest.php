@@ -66,6 +66,9 @@ class Module3AccessTest extends TestCase
             ->assertSee('Borrow '.$item->name)
             ->assertSee('name="expected_return_at"', false)
             ->assertSee('required', false)
+            ->assertSee('name="quantity"', false)
+            ->assertSee('Borrow request submitted from item QR code')
+            ->assertSee('The item is borrowed once an administrator or property custodian approves it.')
             ->assertSee('Submit Borrow Request');
 
         $returnDate = now()->addDays(2)->toDateString();
@@ -73,7 +76,7 @@ class Module3AccessTest extends TestCase
             'item_id' => $item->id,
             'transaction_type' => 'borrow',
             'quantity' => 2,
-            'purpose' => 'For classroom activity',
+            'purpose' => 'Borrow request submitted from item QR code',
             'expected_return_at' => $returnDate,
         ])->assertCreated()
             ->assertJsonPath('status', 'pending')
