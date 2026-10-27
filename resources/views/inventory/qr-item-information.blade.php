@@ -1,6 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Item Information</h2>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            @if($action === 'borrow')
+                Borrow Request
+            @elseif($action === 'return')
+                Return Item
+            @else
+                Item Information
+            @endif
+        </h2>
     </x-slot>
 
     <div class="py-6">
@@ -8,12 +16,31 @@
             <div class="bg-white shadow sm:rounded-lg p-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
                     <div>
-                        <h3 class="text-lg font-bold text-gray-900">QR Inventory Record</h3>
-                        <p class="text-sm text-gray-600">Digital item information linked to the physical inventory.</p>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            @if($action === 'borrow')
+                                Borrow {{ $item->name }}
+                            @elseif($action === 'return')
+                                Return {{ $item->name }}
+                            @else
+                                QR Inventory Record
+                            @endif
+                        </h3>
+                        <p class="text-sm text-gray-600">
+                            @if($action === 'borrow')
+                                Enter the quantity and return date, then submit your request for approval.
+                            @elseif($action === 'return')
+                                Complete the return for this item.
+                            @else
+                                Digital item information linked to the physical inventory.
+                            @endif
+                        </p>
                     </div>
-                    <a href="{{ route('inventory.qr.scan') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Scan Again</a>
+                    @if(!$action)
+                        <a href="{{ route('inventory.qr.scan') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Scan Again</a>
+                    @endif
                 </div>
 
+                @if(!$action)
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h4 class="font-semibold mb-4">Item Details</h4>
@@ -52,6 +79,7 @@
                         @endif
                     </div>
                 </div>
+                @endif
 
                 @if($action === 'borrow' && $canBorrow)
                     <section class="mt-6 border border-gray-200 rounded-lg p-4">
@@ -107,13 +135,6 @@
                             <p class="text-sm text-gray-600">No approved active borrow record was found for this item.</p>
                         @endif
                     </section>
-                @elseif($canBorrow || $activeBorrows->isNotEmpty())
-                    <div class="mt-6 flex flex-wrap gap-3">
-                        @if($canBorrow)
-                            <a href="{{ route('inventory.qr.scan', ['action' => 'borrow']) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md">Scan QR to Borrow</a>
-                        @endif
-                        <a href="{{ route('inventory.qr.scan', ['action' => 'return']) }}" class="inline-flex items-center px-4 py-2 bg-green-700 text-white rounded-md">Scan QR to Return</a>
-                    </div>
                 @endif
             </div>
         </div>

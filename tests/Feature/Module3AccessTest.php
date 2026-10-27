@@ -52,18 +52,24 @@ class Module3AccessTest extends TestCase
         $this->actingAs($teacher)
             ->get('/inventory/items/list')
             ->assertOk()
-            ->assertSee('Scan QR to Borrow')
-            ->assertSee('action=borrow')
-            ->assertSee('Scan QR to Return')
-            ->assertSee('action=return');
+            ->assertDontSee('Scan QR to Borrow')
+            ->assertDontSee('Scan QR to Return');
 
         $this->get('/inventory/qr/scan?action=borrow')
             ->assertOk()
+            ->assertSee('Scan Item to Borrow')
+            ->assertDontSee('Quick Inventory Lookup')
+            ->assertDontSee('Lookup Item')
             ->assertSee('scanAction = "borrow"', false);
 
         $this->get('/inventory/qr/item/'.$item->id.'?action=borrow')
             ->assertOk()
             ->assertSee('Borrow '.$item->name)
+            ->assertDontSee('Item Details')
+            ->assertDontSee('QR Identifier')
+            ->assertDontSee('Recent History')
+            ->assertDontSee('Scan QR to Borrow')
+            ->assertDontSee('Scan QR to Return')
             ->assertSee('name="expected_return_at"', false)
             ->assertSee('required', false)
             ->assertSee('name="quantity"', false)
@@ -109,6 +115,8 @@ class Module3AccessTest extends TestCase
             ->get('/inventory/qr/item/'.$item->id.'?action=return')
             ->assertOk()
             ->assertSee('Return '.$item->name)
+            ->assertDontSee('Item Details')
+            ->assertDontSee('Recent History')
             ->assertSee('Confirm Return');
 
         $this->postJson('/inventory/transactions', [

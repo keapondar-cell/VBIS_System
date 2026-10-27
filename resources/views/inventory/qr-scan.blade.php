@@ -24,18 +24,34 @@
             <div class="qr-shell bg-white shadow sm:rounded-lg p-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
                     <div>
-                        <h3 class="text-lg font-bold text-gray-900">Quick Inventory Lookup</h3>
-                        <p class="text-sm text-gray-600">Scan or enter the QR identifier to retrieve item information.</p>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            @if($action === 'borrow')
+                                Scan Item to Borrow
+                            @elseif($action === 'return')
+                                Scan Item to Return
+                            @else
+                                Quick Inventory Lookup
+                            @endif
+                        </h3>
+                        <p class="text-sm text-gray-600">
+                            @if($action)
+                                Scan the item’s {{ $action }} QR code to open its {{ $action }} form directly.
+                            @else
+                                Scan or enter the QR identifier to retrieve item information.
+                            @endif
+                        </p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 {{ $action ? '' : 'lg:grid-cols-2' }} gap-6">
+                    @if(!$action)
                     <div class="qr-panel border border-gray-200 rounded-lg p-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Scan or Enter Item Identifier</label>
                         <input id="qrInput" type="text" placeholder="Example: 1 or ITEM-000001" class="w-full border rounded-md px-3 py-2 mb-3">
                         <button id="lookupBtn" class="w-full px-4 py-2 bg-gray-900 text-white rounded-md">Lookup Item</button>
                         <p class="mt-3 text-xs text-gray-500">If the QR code identifies an item in the database, the system will display the item information and transaction history.</p>
                     </div>
+                    @endif
 
                     <div class="qr-panel qr-camera-panel border border-gray-200 rounded-lg p-4 bg-gray-50">
                         <h4 class="font-semibold mb-3">Camera / QR scanning</h4>
@@ -85,11 +101,11 @@
             alert('Item not found.');
         }
 
-        lookupBtn.addEventListener('click', function () {
+        lookupBtn?.addEventListener('click', function () {
             openItemRecord(qrInput.value);
         });
 
-        qrInput.addEventListener('keydown', function (event) {
+        qrInput?.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') {
                 openItemRecord(qrInput.value);
             }

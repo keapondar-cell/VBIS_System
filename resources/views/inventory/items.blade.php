@@ -54,12 +54,6 @@
             @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
                 <button id="newItem" style="margin-left:12px"><span aria-hidden="true">＋</span> Add New Item</button>
             @endif
-            @if(auth()->user() && (auth()->user()->isTeacher() || auth()->user()->isAdmin()))
-                <a href="{{ route('inventory.qr.scan', ['action' => 'borrow']) }}" class="qr-btn" style="display:inline-block;margin:0 0 1rem 8px;text-decoration:none">Scan QR to Borrow</a>
-                <a href="{{ route('inventory.qr.scan', ['action' => 'return']) }}" class="qr-btn" style="display:inline-block;margin:0 0 1rem 8px;text-decoration:none">Scan QR to Return</a>
-            @elseif(auth()->user() && auth()->user()->isPropertyCustodian())
-                <a href="{{ route('inventory.qr.scan', ['action' => 'return']) }}" class="qr-btn" style="display:inline-block;margin:0 0 1rem 8px;text-decoration:none">Scan QR to Return</a>
-            @endif
             <form method="GET" action="{{ route('inventory.items.list') }}" class="items-search">
                 <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by item name, SKU, classification, or department" aria-label="Search inventory items">
                 <button type="submit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>Search</button>
