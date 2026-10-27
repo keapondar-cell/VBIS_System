@@ -188,6 +188,16 @@
         const expectedReturn = document.getElementById('c_expected_return_at');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+        function formatManilaDateTime(value, includeTime = true){
+            if(!value) return 'N/A';
+            const date = new Date(value);
+            if(Number.isNaN(date.getTime())) return 'N/A';
+            const options = includeTime
+                ? { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Manila' }
+                : { dateStyle: 'medium', timeZone: 'Asia/Manila' };
+            return new Intl.DateTimeFormat('en-PH', options).format(date);
+        }
+
         function updateBorrowFields(){
             const isBorrow = createType.value === 'borrow';
             const isIssue = createType.value === 'issue';
@@ -248,7 +258,7 @@
                 const typeLabel = type === 'adjustment' ? `<span style="background:#f59e0b;color:#fff;padding:4px 6px;border-radius:4px">Adjustment</span>` : `<span style="background:#0b61d8;color:#fff;padding:4px 6px;border-radius:4px">${escapeHtml(t.transaction_type)}</span>`;
                 const department = t.department && t.department.name ? t.department.name : (t.department_id ? 'Department '+t.department_id : '');
                 const requestedFor = t.requested_for_at
-                    ? new Date(t.requested_for_at).toLocaleString(undefined, type === 'issue' ? { dateStyle: 'medium' } : undefined)
+                    ? formatManilaDateTime(t.requested_for_at, type !== 'issue')
                     : 'N/A';
                 let statusCell = escapeHtml(t.status || 'N/A');
                 let actions = '';
@@ -260,7 +270,7 @@
                     actions += `<button class="return-borrow" data-id="${t.id}" data-item-id="${t.item_id}" data-user-id="${t.user_id}" data-quantity="${t.quantity}">Mark as returned</button>`;
                 }
                 const notes = t.status === 'rejected' && t.rejection_reason ? `${t.notes || ''} | Rejection: ${t.rejection_reason}` : (t.notes || '');
-                html += `<tr class="link-row" data-id="${t.id}"><td>${t.id}</td><td>${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td>${typeLabel}</td><td>${t.quantity}</td><td>${escapeHtml(department)}</td><td>${escapeHtml(requestedFor)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td>${statusCell}</td><td>${escapeHtml(notes)}</td><td>${t.created_at}`;
+                html += `<tr class="link-row" data-id="${t.id}"><td>${t.id}</td><td>${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td>${typeLabel}</td><td>${t.quantity}</td><td>${escapeHtml(department)}</td><td>${escapeHtml(requestedFor)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td>${statusCell}</td><td>${escapeHtml(notes)}</td><td>${escapeHtml(formatManilaDateTime(t.created_at))}`;
                 if(canEdit || canManage){ html += `<td><div class="action-buttons">${actions}</div></td>`; }
                 html += `</tr>`;
             });
@@ -312,15 +322,15 @@
             html += `<div><strong>Department:</strong> ${escapeHtml(t.department && t.department.name ? t.department.name : (t.department_id || 'N/A'))}</div>`;
             const requestedDateLabel = t.transaction_type === 'issue' ? 'Issue date' : (t.transaction_type === 'borrow' ? 'Date borrowed' : 'Requested date &amp; time');
             const requestedDate = t.requested_for_at
-                ? new Date(t.requested_for_at).toLocaleString(undefined, t.transaction_type === 'issue' ? { dateStyle: 'medium' } : undefined)
+                ? formatManilaDateTime(t.requested_for_at, t.transaction_type !== 'issue')
                 : 'N/A';
             html += `<div><strong>${requestedDateLabel}:</strong> ${escapeHtml(requestedDate)}</div>`;
-            html += `<div><strong>Expected return:</strong> ${escapeHtml(t.expected_return_at||'N/A')}</div>`;
-            html += `<div><strong>Returned:</strong> ${escapeHtml(t.returned_at||'N/A')}</div>`;
+            html += `<div><strong>Expected return:</strong> ${escapeHtml(formatManilaDateTime(t.expected_return_at, false))}</div>`;
+            html += `<div><strong>Returned:</strong> ${escapeHtml(formatManilaDateTime(t.returned_at))}</div>`;
             html += `<div><strong>Condition:</strong> ${escapeHtml(t.condition||'Not recorded')}</div>`;
             html += `<div><strong>Notes:</strong> ${escapeHtml(t.notes||'')}</div>`;
             if (t.rejection_reason) html += `<div><strong>Rejection reason:</strong> ${escapeHtml(t.rejection_reason)}</div>`;
-            html += `<div><strong>Date:</strong> ${t.created_at}</div>`;
+            html += `<div><strong>Date:</strong> ${escapeHtml(formatManilaDateTime(t.created_at))}</div>`;
             if(item){ html += `<div style="margin-top:8px"><strong>Current Item Qty:</strong> ${item.quantity||'N/A'}</div>`; }
             detailContent.innerHTML = html;
         }

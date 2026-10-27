@@ -52,15 +52,15 @@
                         <tbody>
                             @forelse($transactions as $transaction)
                                 <tr class="border-t border-gray-200">
-                                    <td class="px-3 py-2">{{ $transaction->created_at ? $transaction->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ \App\Support\SchoolTime::format($transaction->created_at, 'M d, Y h:i A') }}</td>
                                     <td class="px-3 py-2">{{ $transaction->user->name ?? 'System' }}</td>
                                     <td class="px-3 py-2">{{ $transaction->item->name ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ ucfirst($transaction->transaction_type ?? 'update') }}</td>
                                     <td class="px-3 py-2">{{ $transaction->quantity }}</td>
                                     <td class="px-3 py-2">{{ $transaction->department->name ?? ($transaction->department_id ? 'Department '.$transaction->department_id : 'N/A') }}</td>
-                                    <td class="px-3 py-2">{{ $transaction->requested_for_at?->format($transaction->transaction_type === 'issue' ? 'M d, Y' : 'M d, Y h:i A') ?? 'N/A' }}</td>
-                                    <td class="px-3 py-2">{{ $transaction->expected_return_at?->format('M d, Y h:i A') ?? 'N/A' }}</td>
-                                    <td class="px-3 py-2">{{ $transaction->returned_at?->format('M d, Y h:i A') ?? 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ \App\Support\SchoolTime::format($transaction->requested_for_at, $transaction->transaction_type === 'issue' ? 'M d, Y' : 'M d, Y h:i A') }}</td>
+                                    <td class="px-3 py-2">{{ \App\Support\SchoolTime::format($transaction->expected_return_at, 'M d, Y') }}</td>
+                                    <td class="px-3 py-2">{{ \App\Support\SchoolTime::format($transaction->returned_at, 'M d, Y h:i A') }}</td>
                                     <td class="px-3 py-2">{{ $transaction->notes ?? 'N/A' }}</td>
                                 </tr>
                             @empty

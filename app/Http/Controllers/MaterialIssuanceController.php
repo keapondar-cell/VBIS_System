@@ -10,6 +10,7 @@ use App\Models\Department;
 use App\Notifications\IssueApprovedNotification;
 use App\Notifications\IssueRejectedNotification;
 use App\Notifications\IssueRequestedNotification;
+use App\Support\SchoolTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,9 @@ class MaterialIssuanceController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
+        $request->merge([
+            'requested_for_at' => SchoolTime::normalizeInput($request->input('requested_for_at')),
+        ]);
 
         // Teachers and admins can create material requests.
         if (! $user || (! $user->isTeacher() && ! $user->isAdmin())) {
@@ -215,6 +219,10 @@ class MaterialIssuanceController extends Controller
         if ($issue->status !== 'pending') {
             return response()->json(['error' => 'Only pending requests can be edited.'], 422);
         }
+
+        $request->merge([
+            'requested_for_at' => SchoolTime::normalizeInput($request->input('requested_for_at')),
+        ]);
 
         $data = $request->validate([
             'item_id' => 'required|integer|exists:items,id',

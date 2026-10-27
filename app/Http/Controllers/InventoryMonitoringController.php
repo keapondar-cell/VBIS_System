@@ -7,6 +7,7 @@ use App\Models\MaterialIssue;
 use Illuminate\Http\Request;
 use App\Models\InventoryTransaction;
 use App\Models\Department;
+use App\Support\SchoolTime;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Carbon\Carbon;
@@ -105,14 +106,14 @@ class InventoryMonitoringController extends Controller
             return $this->downloadSpreadsheetXlsx(
                 'Inventory Items',
                 ['id', 'sku', 'name', 'classification', 'location', 'quantity', 'status', 'qr_code', 'created_at'],
-                $items->map(fn ($item) => [$item->id, $item->sku, $item->name, $item->classification ?? $item->category, $item->location, $item->quantity, $item->status, $item->qr_code, $item->created_at])->all(),
-                'inventory_items_'.now()->format('Ymd_His').'.xlsx'
+                $items->map(fn ($item) => [$item->id, $item->sku, $item->name, $item->classification ?? $item->category, $item->location, $item->quantity, $item->status, $item->qr_code, SchoolTime::format($item->created_at, 'Y-m-d H:i:s', '')])->all(),
+                'inventory_items_'.now(SchoolTime::TIMEZONE)->format('Ymd_His').'.xlsx'
             );
         }
 
         if ($format === 'pdf' && class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('inventory.pdf_items', ['items' => $items]);
-            return $pdf->download('inventory_items_'.now()->format('Ymd_His').'.pdf');
+            return $pdf->download('inventory_items_'.now(SchoolTime::TIMEZONE)->format('Ymd_His').'.pdf');
         }
 
         // Fallback to CSV
@@ -130,14 +131,14 @@ class InventoryMonitoringController extends Controller
                     $i->quantity,
                     $i->status,
                     $i->qr_code,
-                    $i->created_at,
+                    SchoolTime::format($i->created_at, 'Y-m-d H:i:s', ''),
                 ]);
             }
 
             fclose($handle);
         });
 
-        $filename = 'inventory_items_'.now()->format('Ymd_His').'.csv';
+        $filename = 'inventory_items_'.now(SchoolTime::TIMEZONE)->format('Ymd_His').'.csv';
         $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
         $response->headers->set('Content-Disposition', 'attachment; filename="'.$filename.'"');
 
@@ -162,8 +163,8 @@ class InventoryMonitoringController extends Controller
             ->orderBy('id', 'asc')
             ->paginate($perPage, ['*'], 'page', $page);
 
-        $monthStart = now()->startOfMonth();
-        $monthEnd = now()->endOfMonth();
+        $monthStart = now(SchoolTime::TIMEZONE)->startOfMonth()->utc();
+        $monthEnd = now(SchoolTime::TIMEZONE)->endOfMonth()->utc();
         $issuedThisMonth = InventoryTransaction::where('transaction_type', 'issue')
             ->whereBetween('created_at', [$monthStart, $monthEnd])->sum('quantity');
         $borrowedThisMonth = InventoryTransaction::where('transaction_type', 'borrow')
@@ -198,8 +199,8 @@ class InventoryMonitoringController extends Controller
                 ->limit(8)
                 ->get()
                 ->map(function ($borrow) {
-                    $dueDate = $borrow->expected_return_at->copy()->startOfDay();
-                    $today = now()->startOfDay();
+                    $dueDate = $borrow->expected_return_at->copy()->setTimezone(SchoolTime::TIMEZONE)->startOfDay();
+                    $today = now(SchoolTime::TIMEZONE)->startOfDay();
                     $daysRemaining = $today->diffInDays($dueDate, false);
 
                     return [
@@ -501,7 +502,10 @@ class InventoryMonitoringController extends Controller
                 $rows = InventoryTransaction::with(['item', 'user', 'department'])->latest()->get()->map(fn ($row) => [
                     $row->id, optional($row->item)->name, optional($row->user)->name,
                     $row->transaction_type, $row->quantity, optional($row->department)->name ?? 'Department '.$row->department_id,
-                    $row->notes, $row->expected_return_at, $row->returned_at, $row->created_at,
+                    $row->notes,
+                    SchoolTime::format($row->expected_return_at, 'Y-m-d', ''),
+                    SchoolTime::format($row->returned_at, 'Y-m-d H:i:s', ''),
+                    SchoolTime::format($row->created_at, 'Y-m-d H:i:s', ''),
                 ])->all();
                 $headings = ['id', 'item', 'user', 'transaction_type', 'quantity', 'department', 'notes', 'expected_return_at', 'returned_at', 'created_at'];
                 $title = 'Inventory Transactions Report';
@@ -519,7 +523,7 @@ class InventoryMonitoringController extends Controller
                     $row->quantity,
                     optional($row->issuedTo)->name ?? 'N/A',
                     $row->status,
-                    $row->created_at,
+                    SchoolTime::format($row->created_at, 'Y-m-d H:i:s', ''),
                 ])->all();
                 $headings = ['id', 'item_code', 'item_name', 'quantity_issued', 'recipient', 'status', 'created_at'];
                 $title = 'Issuance Report';
@@ -532,7 +536,7 @@ class InventoryMonitoringController extends Controller
                 $title = 'Inventory Status Report';
             }
 
-            $filename = str($type)->replace('_', '-')->append('-report-'.now()->format('Ymd_His'));
+            $filename = str($type)->replace('_', '-')->append('-report-'.now(SchoolTime::TIMEZONE)->format('Ymd_His'));
 
             if ($format === 'csv') {
                 return $this->downloadCsv($headings, $rows, $filename.'.csv');
@@ -842,7 +846,7 @@ class InventoryMonitoringController extends Controller
 
         $item = new Item($data);
         if ($createdAt !== null) {
-            $item->created_at = Carbon::createFromFormat('Y-m-d\TH:i', $createdAt, 'Asia/Manila')->utc();
+            $item->created_at = Carbon::createFromFormat('Y-m-d\TH:i', $createdAt, SchoolTime::TIMEZONE)->utc();
         }
         $item->save();
 

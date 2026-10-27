@@ -51,8 +51,8 @@
                                 @php
                                     $status = strtolower($report->transaction_type ?? 'borrow');
                                     $statusLabel = $status === 'return' ? 'Returned' : 'Borrowed';
-                                    $borrowDate = $report->transaction_type === 'borrow' ? ($report->created_at ? $report->created_at->format('M d, Y h:i A') : 'N/A') : 'N/A';
-                                    $actualReturnDate = $report->transaction_type === 'return' ? ($report->created_at ? $report->created_at->format('M d, Y h:i A') : 'N/A') : 'N/A';
+                                    $borrowDate = $report->transaction_type === 'borrow' ? \App\Support\SchoolTime::format($report->created_at, 'M d, Y h:i A') : 'N/A';
+                                    $actualReturnDate = $report->transaction_type === 'return' ? \App\Support\SchoolTime::format($report->created_at, 'M d, Y h:i A') : 'N/A';
                                 @endphp
                                 <tr class="border-t border-gray-200">
                                     <td class="px-3 py-2">{{ $report->user->name ?? 'N/A' }}</td>
@@ -61,7 +61,7 @@
                                     <td class="px-3 py-2">{{ $report->department->name ?? ($report->department_id ? 'Department '.$report->department_id : 'N/A') }}</td>
                                     <td class="px-3 py-2">{{ $report->quantity }}</td>
                                     <td class="px-3 py-2">{{ $borrowDate }}</td>
-                                    <td class="px-3 py-2">{{ $report->expected_return_at ? $report->expected_return_at->format('M d, Y h:i A') : 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ \App\Support\SchoolTime::format($report->expected_return_at, 'M d, Y') }}</td>
                                     <td class="px-3 py-2">{{ $actualReturnDate }}</td>
                                     <td class="px-3 py-2"><span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ $statusLabel === 'Returned' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700' }}">{{ $statusLabel }}</span></td>
                                 </tr>

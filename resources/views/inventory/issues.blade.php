@@ -94,6 +94,32 @@
         const csrf = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : null;
 
         function escapeHtml(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+        function formatManilaDateTime(value, includeTime = true){
+            if(!value) return 'N/A';
+            const date = new Date(value);
+            if(Number.isNaN(date.getTime())) return 'N/A';
+            const options = includeTime
+                ? { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Manila' }
+                : { dateStyle: 'medium', timeZone: 'Asia/Manila' };
+            return new Intl.DateTimeFormat('en-PH', options).format(date);
+        }
+        function toManilaDateTimeLocal(value){
+            const date = value ? new Date(value) : new Date();
+            if(Number.isNaN(date.getTime())) return '';
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hourCycle: 'h23',
+            }).formatToParts(date).reduce((result, part) => {
+                result[part.type] = part.value;
+                return result;
+            }, {});
+            return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+        }
 
         async function load(){
             const res = await fetch('/inventory/issues');
@@ -108,8 +134,8 @@
                 const purpose = i.status === 'rejected' && i.rejection_reason ? `${i.notes || 'No purpose specified'} | Rejection: ${i.rejection_reason}` : (i.notes || 'No purpose specified');
                 const itemName = i.item ? escapeHtml(i.item.name) : i.item_id;
                 const departmentName = i.department ? escapeHtml(i.department.name) : 'Not selected';
-                const requestedFor = i.requested_for_at ? escapeHtml(new Date(i.requested_for_at).toLocaleString()) : 'Not scheduled';
-                html += `<tr><td>${i.id}</td><td>${itemName}</td><td>${i.quantity}</td><td>${escapeHtml(purpose)}</td><td>${avatar ? `<img src="${escapeHtml(avatar)}" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;vertical-align:middle">` : ''}${escapeHtml(issuer)}</td><td>${departmentName}</td><td>${requestedFor}</td><td><span class="status ${escapeHtml(i.status)}">${escapeHtml(i.status)}</span></td><td>${escapeHtml(i.created_at)}</td><td class="actions">`;
+                const requestedFor = i.requested_for_at ? escapeHtml(formatManilaDateTime(i.requested_for_at)) : 'Not scheduled';
+                html += `<tr><td>${i.id}</td><td>${itemName}</td><td>${i.quantity}</td><td>${escapeHtml(purpose)}</td><td>${avatar ? `<img src="${escapeHtml(avatar)}" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;vertical-align:middle">` : ''}${escapeHtml(issuer)}</td><td>${departmentName}</td><td>${requestedFor}</td><td><span class="status ${escapeHtml(i.status)}">${escapeHtml(i.status)}</span></td><td>${escapeHtml(formatManilaDateTime(i.created_at))}</td><td class="actions">`;
                 if(i.status === 'pending' && currentUserId === i.issued_to_user_id && !canApprove){ html += `<button class="btn warning edit-issue-button" data-id="${i.id}" data-item-id="${i.item_id}" data-quantity="${i.quantity}" data-purpose="${escapeHtml(i.notes || '')}" data-department-id="${i.department_id || ''}" data-requested-for-at="${escapeHtml(i.requested_for_at || '')}">Edit</button>`; }
                 if(i.status==='pending'){
                     if(canApprove){ html += ` <button class="btn" onclick="approveIssue(${i.id})">Approve</button> <button class="btn danger" onclick="rejectIssue(${i.id})">Reject</button>`; }
@@ -155,9 +181,7 @@
         const createIssueForm = document.getElementById('createIssueForm');
 
         function setRequestedForDefault(input){
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            input.value = now.toISOString().slice(0, 16);
+            input.value = toManilaDateTimeLocal();
         }
         if (requestedForInput) setRequestedForDefault(requestedForInput);
 
@@ -257,7 +281,7 @@
         async function approveIssue(id){ if(!confirm('Approve issue #'+id+'?')) return; const res = await fetch('/inventory/issues/'+id+'/approve', { method:'POST', headers:{'Accept':'application/json','X-CSRF-TOKEN':csrf} }); const j = await res.json().catch(()=>({error:'error'})); if(res.ok) load(); else alert(j.error||JSON.stringify(j)); }
         async function rejectIssue(id){ const reason = prompt('Why are you rejecting issue #'+id+'?'); if(reason === null || !reason.trim()) return; const res = await fetch('/inventory/issues/'+id+'/reject', { method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify({reason:reason.trim()}) }); const j = await res.json().catch(()=>({error:'error'})); if(res.ok) load(); else alert(j.error||JSON.stringify(j)); }
 
-        function toDateTimeLocal(value){ if(!value) return ''; const date=new Date(value); if(Number.isNaN(date.getTime())) return ''; date.setMinutes(date.getMinutes()-date.getTimezoneOffset()); return date.toISOString().slice(0,16); }
+        function toDateTimeLocal(value){ return toManilaDateTimeLocal(value); }
         function openEditIssue(id, itemId, quantity, purpose, departmentId, requestedForAt){ document.getElementById('edit_issue_id').value=id; document.getElementById('edit_item_id').value=itemId; document.getElementById('edit_quantity').value=quantity; document.getElementById('edit_purpose').value=purpose; document.getElementById('edit_department').value=departmentId || ''; document.getElementById('edit_requested_for_at').value=toDateTimeLocal(requestedForAt); document.getElementById('editIssueModal').style.display='flex'; }
         function closeEditIssue(){ document.getElementById('editIssueModal').style.display='none'; document.getElementById('editIssueMsg').textContent=''; }
         document.getElementById('editIssueForm').addEventListener('submit', async (event)=>{ event.preventDefault(); const id=document.getElementById('edit_issue_id').value; const payload={item_id:Number(document.getElementById('edit_item_id').value),quantity:Number(document.getElementById('edit_quantity').value),purpose:document.getElementById('edit_purpose').value,department_id:document.getElementById('edit_department').value || null,requested_for_at:document.getElementById('edit_requested_for_at').value || null}; const res=await fetch('/inventory/issues/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf},body:JSON.stringify(payload)}); if(res.ok){closeEditIssue();load();}else{document.getElementById('editIssueMsg').textContent='Unable to update this request.';} });

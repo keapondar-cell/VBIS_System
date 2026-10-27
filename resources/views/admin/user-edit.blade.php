@@ -46,7 +46,7 @@
                 <strong>User ID:</strong> {{ $user->id }}<br>
                 <strong>Role:</strong> {{ ucfirst(str_replace('_', ' ', $user->role)) }}<br>
                 <strong>Status:</strong> {{ $user->is_active ? '✓ Active' : '✗ Inactive' }}<br>
-                <strong>Member Since:</strong> {{ $user->created_at->format('M d, Y') }}
+                <strong>Member Since:</strong> {{ \App\Support\SchoolTime::format($user->created_at, 'M d, Y') }}
             </div>
 
             <form method="POST" action="{{ route('admin.users.update', $user->id) }}">

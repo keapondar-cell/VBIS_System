@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Notifications\AccountApprovalNotification;
+use App\Support\SchoolTime;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -140,7 +141,7 @@ class RoleManagementController extends Controller
 
         if ($request->input('format') === 'pdf') {
             return \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.pdf_users', compact('users'))
-                ->download('users_'.now()->format('Ymd_His').'.pdf');
+                ->download('users_'.now(SchoolTime::TIMEZONE)->format('Ymd_His').'.pdf');
         }
 
         $response = new StreamedResponse(function () use ($users) {
@@ -148,16 +149,15 @@ class RoleManagementController extends Controller
             fputcsv($handle, ['id', 'name', 'email', 'role', 'status', 'created_at']);
             foreach ($users as $u) {
                 $status = $u->is_active ? 'active' : 'inactive';
-                fputcsv($handle, [$u->id, $u->name, $u->email, $u->role, $status, $u->created_at]);
+                fputcsv($handle, [$u->id, $u->name, $u->email, $u->role, $status, SchoolTime::format($u->created_at, 'Y-m-d H:i:s', '')]);
             }
             fclose($handle);
         });
 
-        $filename = 'users_'.now()->format('Ymd_His').'.csv';
+        $filename = 'users_'.now(SchoolTime::TIMEZONE)->format('Ymd_His').'.csv';
         $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
         $response->headers->set('Content-Disposition', 'attachment; filename="'.$filename.'"');
 
         return $response;
     }
 }
-

@@ -10,6 +10,7 @@ use App\Models\MaterialIssue;
 use App\Models\InventoryTransaction;
 use App\Models\User;
 use App\Notifications\IssueApprovedNotification;
+use Carbon\CarbonImmutable;
 
 class MaterialIssuanceTest extends TestCase
 {
@@ -93,7 +94,7 @@ class MaterialIssuanceTest extends TestCase
         $this->assertDatabaseHas('material_issues', [
             'id' => $response->json('id'),
             'department_id' => $department->id,
-            'requested_for_at' => str_replace('T', ' ', $requestedFor).':00',
+            'requested_for_at' => CarbonImmutable::parse($requestedFor, 'Asia/Manila')->utc()->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -118,7 +119,7 @@ class MaterialIssuanceTest extends TestCase
         $this->assertDatabaseHas('inventory_transactions', [
             'id' => $response->json('id'),
             'department_id' => $department->id,
-            'requested_for_at' => str_replace('T', ' ', $requestedFor).':00',
+            'requested_for_at' => CarbonImmutable::parse($requestedFor, 'Asia/Manila')->utc()->format('Y-m-d H:i:s'),
         ]);
     }
 

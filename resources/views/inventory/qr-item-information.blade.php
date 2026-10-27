@@ -49,7 +49,7 @@
                             <div><dt class="text-gray-500">Current Quantity</dt><dd>{{ $item->quantity }}</dd></div>
                             <div><dt class="text-gray-500">Location</dt><dd>{{ $item->location ?? 'N/A' }}</dd></div>
                             <div><dt class="text-gray-500">Status</dt><dd>{{ ucfirst($item->status ?? 'available') }}</dd></div>
-                            <div><dt class="text-gray-500">Last Updated</dt><dd>{{ $item->updated_at ? $item->updated_at->format('F d, Y h:i A') : 'N/A' }}</dd></div>
+                            <div><dt class="text-gray-500">Last Updated</dt><dd>{{ \App\Support\SchoolTime::format($item->updated_at, 'F d, Y h:i A') }}</dd></div>
                         </dl>
                     </div>
 
@@ -67,7 +67,7 @@
                                     <div class="border-b pb-2">
                                         <div class="font-medium text-gray-700">{{ ucfirst($tx->transaction_type ?? 'update') }}</div>
                                         <div>{{ $tx->quantity }} units</div>
-                                        <div class="text-gray-500">{{ $tx->created_at ? $tx->created_at->format('M d, Y h:i A') : 'N/A' }}</div>
+                                        <div class="text-gray-500">{{ \App\Support\SchoolTime::format($tx->created_at, 'M d, Y h:i A') }}</div>
                                     </div>
                                 @endforeach
                             </div>
@@ -88,7 +88,7 @@
                                     <input name="quantity" type="number" min="1" max="{{ $item->quantity }}" value="1" required class="mt-1 w-full border rounded-md px-3 py-2">
                                 </label>
                                 <label class="text-sm">Return date
-                                    <input name="expected_return_at" type="date" min="{{ now()->addDay()->toDateString() }}" required class="mt-1 w-full border rounded-md px-3 py-2">
+                                    <input name="expected_return_at" type="date" min="{{ now(\App\Support\SchoolTime::TIMEZONE)->addDay()->toDateString() }}" required class="mt-1 w-full border rounded-md px-3 py-2">
                                 </label>
                                 <input name="purpose" type="hidden" value="Borrow request submitted from item QR code">
                                 <p class="md:col-span-2 text-sm text-gray-600">Your request will be sent for approval. The item is borrowed once an administrator or property custodian approves it.</p>

@@ -68,7 +68,7 @@
                                     <td class="px-3 py-2 font-semibold">{{ $item->quantity }}</td>
                                     <td class="px-3 py-2">{{ $item->location ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ ucfirst($item->status ?? 'available') }}</td>
-                                    <td class="px-3 py-2">{{ $item->updated_at ? $item->updated_at->format('M d, Y h:i A') : 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ \App\Support\SchoolTime::format($item->updated_at, 'M d, Y h:i A') }}</td>
                                 </tr>
                             @empty
                                 <tr>

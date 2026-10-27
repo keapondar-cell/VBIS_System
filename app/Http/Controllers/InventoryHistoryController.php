@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\User;
 use App\Notifications\InventoryTransactionNotification;
 use App\Services\InventoryService;
+use App\Support\SchoolTime;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -45,12 +46,12 @@ class InventoryHistoryController extends Controller
         });
 
         if ($request->filled('date_from')) {
-            $from = Carbon::parse($request->input('date_from'))->startOfDay();
+            $from = Carbon::parse($request->input('date_from'), SchoolTime::TIMEZONE)->startOfDay()->utc();
             $query->where('created_at', '>=', $from);
         }
 
         if ($request->filled('date_to')) {
-            $to = Carbon::parse($request->input('date_to'))->endOfDay();
+            $to = Carbon::parse($request->input('date_to'), SchoolTime::TIMEZONE)->endOfDay()->utc();
             $query->where('created_at', '<=', $to);
         }
 
@@ -60,7 +61,7 @@ class InventoryHistoryController extends Controller
             $transactions = $query->get();
 
             return \Barryvdh\DomPDF\Facade\Pdf::loadView('inventory.pdf_transactions', compact('transactions'))
-                ->download('inventory_transactions_'.now()->format('Ymd_His').'.pdf');
+                ->download('inventory_transactions_'.now(SchoolTime::TIMEZONE)->format('Ymd_His').'.pdf');
         }
 
         if ($request->input('export') === 'csv') {
@@ -82,17 +83,17 @@ class InventoryHistoryController extends Controller
                         $t->transaction_type,
                         $t->quantity,
                         $t->notes,
-                        $t->requested_for_at,
-                        $t->expected_return_at,
-                        $t->returned_at,
-                        $t->created_at,
+                        SchoolTime::format($t->requested_for_at, $t->transaction_type === 'issue' ? 'Y-m-d' : 'Y-m-d H:i:s', ''),
+                        SchoolTime::format($t->expected_return_at, 'Y-m-d', ''),
+                        SchoolTime::format($t->returned_at, 'Y-m-d H:i:s', ''),
+                        SchoolTime::format($t->created_at, 'Y-m-d H:i:s', ''),
                     ]);
                 }
 
                 fclose($handle);
             });
 
-            $filename = 'inventory_transactions_'.now()->format('Ymd_His').'.csv';
+            $filename = 'inventory_transactions_'.now(SchoolTime::TIMEZONE)->format('Ymd_His').'.csv';
             $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
             $response->headers->set('Content-Disposition', 'attachment; filename="'.$filename.'"');
 
@@ -117,6 +118,11 @@ class InventoryHistoryController extends Controller
     {
         $user = $request->user();
         $transactionType = strtolower((string) $request->input('transaction_type'));
+        $expectedReturnIsFuture = SchoolTime::isFutureInput($request->input('expected_return_at'));
+        $request->merge([
+            'requested_for_at' => SchoolTime::normalizeInput($request->input('requested_for_at')),
+            'expected_return_at' => SchoolTime::normalizeInput($request->input('expected_return_at')),
+        ]);
 
         // Teachers and admins may request to borrow items; property custodians manage other transactions.
         if ($transactionType === 'borrow' && (! $user || (! $user->isTeacher() && ! $user->isAdmin()))) {
@@ -137,7 +143,15 @@ class InventoryHistoryController extends Controller
             'purpose' => 'nullable|string|min:5|max:500',
             'notes' => 'nullable|string',
             'condition' => 'nullable|string|in:Good,Damaged,Lost,For Repair',
-            'expected_return_at' => 'nullable|date|after:now',
+            'expected_return_at' => [
+                'nullable',
+                'date',
+                function ($attribute, $value, $fail) use ($expectedReturnIsFuture) {
+                    if (! $expectedReturnIsFuture) {
+                        $fail('The expected return date must be in the future in Philippine time.');
+                    }
+                },
+            ],
             'related_transaction_id' => 'nullable|integer|exists:inventory_transactions,id',
         ]);
 
@@ -150,7 +164,15 @@ class InventoryHistoryController extends Controller
             $data['purpose'] = $data['purpose'] ?? $request->input('notes');
             $request->validate([
                 'purpose' => 'required|string|min:5|max:500',
-                'expected_return_at' => 'required|date|after:now',
+                'expected_return_at' => [
+                    'required',
+                    'date',
+                    function ($attribute, $value, $fail) use ($expectedReturnIsFuture) {
+                        if (! $expectedReturnIsFuture) {
+                            $fail('The expected return date must be in the future in Philippine time.');
+                        }
+                    },
+                ],
             ]);
             $data['notes'] = $data['purpose'];
             unset($data['purpose']);

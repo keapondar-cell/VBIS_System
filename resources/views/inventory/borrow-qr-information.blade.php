@@ -38,8 +38,8 @@
                             <div><dt class="text-gray-500">Borrower Name</dt><dd class="font-medium">{{ $transaction->user->name ?? 'Unknown user' }}</dd></div>
                             <div><dt class="text-gray-500">Email</dt><dd>{{ $transaction->user->email ?? 'N/A' }}</dd></div>
                             <div><dt class="text-gray-500">Role</dt><dd>{{ ucfirst(str_replace('_', ' ', $transaction->user->role ?? 'user')) }}</dd></div>
-                            <div><dt class="text-gray-500">Borrow Date</dt><dd>{{ $transaction->created_at ? $transaction->created_at->format('F d, Y h:i A') : 'N/A' }}</dd></div>
-                            <div><dt class="text-gray-500">Expected Return</dt><dd>{{ $transaction->expected_return_at ? $transaction->expected_return_at->format('F d, Y h:i A') : 'N/A' }}</dd></div>
+                            <div><dt class="text-gray-500">Borrow Date</dt><dd>{{ \App\Support\SchoolTime::format($transaction->created_at, 'F d, Y h:i A') }}</dd></div>
+                            <div><dt class="text-gray-500">Expected Return</dt><dd>{{ \App\Support\SchoolTime::format($transaction->expected_return_at, 'F d, Y') }}</dd></div>
                             <div><dt class="text-gray-500">Notes</dt><dd>{{ $transaction->notes ?? 'N/A' }}</dd></div>
                         </dl>
                     </div>

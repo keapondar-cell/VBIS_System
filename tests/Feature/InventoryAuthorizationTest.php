@@ -168,7 +168,7 @@ class InventoryAuthorizationTest extends TestCase
             'quantity' => 1,
             'status' => 'pending',
             'notes' => 'For office use',
-            'requested_for_at' => '2026-10-18 09:30:00',
+            'requested_for_at' => '2026-10-18 01:30:00',
             'expected_return_at' => $returnDate.' 00:00:00',
         ]);
     }

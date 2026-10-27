@@ -42,7 +42,7 @@
                                 <div>
                                     <p class="text-base font-medium text-slate-800">{{ $message }}</p>
                                     <p class="mt-1 text-xs text-slate-500">
-                                        {{ $createdAt ? \Carbon\Carbon::parse($createdAt)->format('F d, Y h:i A') : 'Recently' }}
+                                        {{ \App\Support\SchoolTime::format($createdAt, 'F d, Y h:i A', 'Recently') }}
                                     </p>
                                 </div>
                             </div>

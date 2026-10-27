@@ -16,12 +16,12 @@
 <body>
     @include('reports.school-header')
     <h1>Inventory Transactions</h1>
-    <p>Generated {{ now()->format('M d, Y h:i A') }}</p>
+    <p>Generated {{ \App\Support\SchoolTime::format(now(), 'M d, Y h:i A') }}</p>
     <table>
         <thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Due</th><th>Returned</th><th>Notes</th><th>Date</th></tr></thead>
         <tbody>
             @foreach($transactions as $transaction)
-                <tr><td>{{ $transaction->id }}</td><td>{{ optional($transaction->item)->name }}</td><td>{{ optional($transaction->user)->name }}</td><td>{{ $transaction->transaction_type }}</td><td>{{ $transaction->quantity }}</td><td>{{ optional($transaction->department)->name ?? 'Department '.$transaction->department_id }}</td><td>{{ $transaction->expected_return_at ?? 'N/A' }}</td><td>{{ $transaction->returned_at ?? 'N/A' }}</td><td>{{ $transaction->notes }}</td><td>{{ $transaction->created_at }}</td></tr>
+                <tr><td>{{ $transaction->id }}</td><td>{{ optional($transaction->item)->name }}</td><td>{{ optional($transaction->user)->name }}</td><td>{{ $transaction->transaction_type }}</td><td>{{ $transaction->quantity }}</td><td>{{ optional($transaction->department)->name ?? 'Department '.$transaction->department_id }}</td><td>{{ \App\Support\SchoolTime::format($transaction->expected_return_at, 'M d, Y') }}</td><td>{{ \App\Support\SchoolTime::format($transaction->returned_at, 'M d, Y h:i A') }}</td><td>{{ $transaction->notes }}</td><td>{{ \App\Support\SchoolTime::format($transaction->created_at, 'M d, Y h:i A') }}</td></tr>
             @endforeach
         </tbody>
     </table>

@@ -16,12 +16,12 @@
 <body>
     @include('reports.school-header')
     <h1>User Directory</h1>
-    <p>Generated {{ now()->format('M d, Y h:i A') }}</p>
+    <p>Generated {{ \App\Support\SchoolTime::format(now(), 'M d, Y h:i A') }}</p>
     <table>
         <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th></tr></thead>
         <tbody>
             @foreach($users as $user)
-                <tr><td>{{ $user->id }}</td><td>{{ $user->name }}</td><td>{{ $user->email }}</td><td>{{ $user->role }}</td><td>{{ $user->is_active ? 'active' : 'inactive' }}</td><td>{{ $user->created_at }}</td></tr>
+                <tr><td>{{ $user->id }}</td><td>{{ $user->name }}</td><td>{{ $user->email }}</td><td>{{ $user->role }}</td><td>{{ $user->is_active ? 'active' : 'inactive' }}</td><td>{{ \App\Support\SchoolTime::format($user->created_at, 'M d, Y h:i A') }}</td></tr>
             @endforeach
         </tbody>
     </table>

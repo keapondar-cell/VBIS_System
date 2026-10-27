@@ -54,7 +54,7 @@
                         <tbody>
                             @forelse($events as $event)
                                 <tr class="border-t border-gray-200">
-                                    <td class="px-3 py-2">{{ $event->created_at ? $event->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ \App\Support\SchoolTime::format($event->created_at, 'M d, Y h:i A') }}</td>
                                     <td class="px-3 py-2">{{ $event->user->name ?? 'System' }}</td>
                                     <td class="px-3 py-2 capitalize">{{ $event->transaction_type ?? 'System action' }}</td>
                                     <td class="px-3 py-2">{{ $event->item->name ?? 'N/A' }}</td>

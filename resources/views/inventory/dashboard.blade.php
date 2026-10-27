@@ -139,7 +139,7 @@
                                                     <div class="due-row">
                                                         <div class="min-w-0">
                                                             <div class="truncate font-bold text-slate-800">{{ $borrow['item_name'] ?? 'Unknown item' }}</div>
-                                                            <div class="due-date">Quantity: {{ $borrow['quantity'] ?? 0 }} · Due {{ \Carbon\Carbon::parse($borrow['expected_return_at'])->format('M d, Y') }}</div>
+                                                            <div class="due-date">Quantity: {{ $borrow['quantity'] ?? 0 }} · Due {{ \App\Support\SchoolTime::format($borrow['expected_return_at'] ?? null, 'M d, Y') }}</div>
                                                         </div>
                                                         <span class="due-status {{ $statusClass }}">{{ $statusText }}</span>
                                                     </div>
@@ -325,7 +325,7 @@
         if(!value) return 'Loading...';
         const d = new Date(value);
         if(Number.isNaN(d.getTime())) return value;
-        return d.toLocaleString();
+        return d.toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
     }
 
     function renderActivity(transactions){

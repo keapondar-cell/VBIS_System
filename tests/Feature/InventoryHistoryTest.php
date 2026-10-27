@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 
 class InventoryHistoryTest extends TestCase
 {
@@ -49,6 +50,45 @@ class InventoryHistoryTest extends TestCase
             'id' => $response->json('id'),
             'requested_for_at' => '2026-10-24 00:00:00',
         ]);
+    }
+
+    public function test_borrow_datetime_inputs_are_saved_as_utc_from_philippine_local_time(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create(['quantity' => 5]);
+        $requestedFor = now('Asia/Manila')->addDays(2)->setTime(14, 30)->format('Y-m-d\TH:i');
+        $expectedReturn = now('Asia/Manila')->addDays(3)->setTime(9, 0)->format('Y-m-d\TH:i');
+
+        $response = $this->actingAs($teacher)->postJson('/inventory/transactions', [
+            'item_id' => $item->id,
+            'transaction_type' => 'borrow',
+            'quantity' => 1,
+            'purpose' => 'For classroom use',
+            'requested_for_at' => $requestedFor,
+            'expected_return_at' => $expectedReturn,
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('inventory_transactions', [
+            'id' => $response->json('id'),
+            'requested_for_at' => CarbonImmutable::parse($requestedFor, 'Asia/Manila')->utc()->format('Y-m-d H:i:s'),
+            'expected_return_at' => CarbonImmutable::parse($expectedReturn, 'Asia/Manila')->utc()->format('Y-m-d H:i:s'),
+        ]);
+    }
+
+    public function test_transaction_date_filters_use_philippine_calendar_days(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::factory()->create();
+        $transaction = InventoryTransaction::factory()->create([
+            'item_id' => $item->id,
+            'created_at' => '2026-10-26 16:30:00',
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/inventory/transactions?date_from=2026-10-27&date_to=2026-10-27')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $transaction->id);
     }
 
     public function test_return_transaction_links_to_open_borrow_and_closes_it(): void

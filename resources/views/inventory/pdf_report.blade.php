@@ -16,7 +16,7 @@
 <body>
     @include('reports.school-header')
     <h1>{{ $title }}</h1>
-    <p>Generated {{ now()->format('M d, Y h:i A') }}</p>
+    <p>Generated {{ \App\Support\SchoolTime::format(now(), 'M d, Y h:i A') }}</p>
     <table>
         <thead><tr>@foreach($headings as $heading)<th>{{ ucfirst(str_replace('_', ' ', $heading)) }}</th>@endforeach</tr></thead>
         <tbody>@foreach($rows as $row)<tr>@foreach($row as $value)<td>{{ $value }}</td>@endforeach</tr>@endforeach</tbody>

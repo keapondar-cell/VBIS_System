@@ -16,7 +16,7 @@
 <body>
     @include('reports.school-header')
     <h1>Inventory Items</h1>
-    <p>Generated {{ now()->format('M d, Y h:i A') }}</p>
+    <p>Generated {{ \App\Support\SchoolTime::format(now(), 'M d, Y h:i A') }}</p>
     <table>
         <thead><tr><th>ID</th><th>SKU</th><th>Name</th><th>Classification</th><th>Location</th><th>Qty</th><th>Status</th></tr></thead>
         <tbody>

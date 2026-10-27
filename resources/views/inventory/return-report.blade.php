@@ -47,7 +47,7 @@
                                     <td class="px-3 py-2">{{ $report->item->sku ?? 'ITM-'.$report->item_id }}</td>
                                     <td class="px-3 py-2">{{ $report->item->classification ?? $report->item->category ?? 'N/A' }}</td>
                                     <td class="px-3 py-2">{{ $report->quantity }}</td>
-                                    <td class="px-3 py-2">{{ $report->created_at ? $report->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
+                                    <td class="px-3 py-2">{{ \App\Support\SchoolTime::format($report->created_at, 'M d, Y h:i A') }}</td>
                                     <td class="px-3 py-2 text-xs">{{ $report->notes ?? 'No notes' }}</td>
                                 </tr>
                             @empty
