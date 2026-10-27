@@ -194,6 +194,7 @@
             document.getElementById('createPurposeField').hidden = !isBorrow;
             document.getElementById('createRequestedAtField').hidden = !isBorrow && !isIssue;
             document.getElementById('createExpectedReturnField').hidden = !isBorrow;
+            expectedReturn.required = isBorrow;
             document.getElementById('createRequestedAtLabel').textContent = isIssue ? 'Issue date' : 'Date borrowed';
             const requestedAtType = isIssue ? 'date' : 'datetime-local';
             if (requestedAt.type !== requestedAtType) {

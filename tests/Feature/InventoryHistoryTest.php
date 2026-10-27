@@ -111,6 +111,28 @@ class InventoryHistoryTest extends TestCase
         $this->assertSame(3, $item->quantity);
     }
 
+    public function test_borrow_request_requires_a_future_return_date(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create(['quantity' => 5]);
+
+        $this->actingAs($teacher)
+            ->postJson('/inventory/transactions', [
+                'item_id' => $item->id,
+                'transaction_type' => 'borrow',
+                'quantity' => 1,
+                'purpose' => 'For classroom activity',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('expected_return_at');
+
+        $this->assertSame(5, $item->fresh()->quantity);
+        $this->assertDatabaseMissing('inventory_transactions', [
+            'item_id' => $item->id,
+            'transaction_type' => 'borrow',
+        ]);
+    }
+
     public function test_inventory_history_records_cannot_be_changed_or_deleted(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

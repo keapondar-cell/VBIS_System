@@ -111,6 +111,7 @@ class MaterialIssuanceTest extends TestCase
             'purpose' => 'For scheduled reading activity',
             'department_id' => $department->id,
             'requested_for_at' => $requestedFor,
+            'expected_return_at' => now()->addDays(3)->toDateString(),
         ]);
 
         $response->assertCreated();

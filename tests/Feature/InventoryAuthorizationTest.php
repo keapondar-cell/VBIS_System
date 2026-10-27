@@ -148,6 +148,7 @@ class InventoryAuthorizationTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $item = Item::factory()->create(['quantity' => 10]);
         $borrowedAt = '2026-10-18T09:30';
+        $returnDate = now()->addDay()->toDateString();
 
         $this->actingAs($admin)
             ->postJson(route('inventory.transactions.store'), [
@@ -156,6 +157,7 @@ class InventoryAuthorizationTest extends TestCase
                 'quantity' => 1,
                 'purpose' => 'For office use',
                 'requested_for_at' => $borrowedAt,
+                'expected_return_at' => $returnDate,
             ])
             ->assertStatus(201);
 
@@ -167,6 +169,7 @@ class InventoryAuthorizationTest extends TestCase
             'status' => 'pending',
             'notes' => 'For office use',
             'requested_for_at' => '2026-10-18 09:30:00',
+            'expected_return_at' => $returnDate.' 00:00:00',
         ]);
     }
 
@@ -196,6 +199,7 @@ class InventoryAuthorizationTest extends TestCase
                 'transaction_type' => 'borrow',
                 'quantity' => 1,
                 'purpose' => 'For classroom use',
+                'expected_return_at' => now()->addDay()->toDateString(),
             ])
             ->assertStatus(403);
     }
@@ -211,6 +215,7 @@ class InventoryAuthorizationTest extends TestCase
                 'transaction_type' => 'borrow',
                 'quantity' => 1,
                 'purpose' => 'For classroom use',
+                'expected_return_at' => now()->addDay()->toDateString(),
             ])
             ->assertStatus(201);
     }
@@ -226,6 +231,7 @@ class InventoryAuthorizationTest extends TestCase
                 'item_id' => $item->id,
                 'transaction_type' => 'borrow',
                 'quantity' => 1,
+                'expected_return_at' => now()->addDay()->toDateString(),
             ])
             ->assertSessionHasErrors(['purpose'])
             ->assertStatus(302);

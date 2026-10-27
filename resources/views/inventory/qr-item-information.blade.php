@@ -62,8 +62,8 @@
                                 <label class="text-sm">Quantity
                                     <input name="quantity" type="number" min="1" max="{{ $item->quantity }}" value="1" required class="mt-1 w-full border rounded-md px-3 py-2">
                                 </label>
-                                <label class="text-sm">Expected return
-                                    <input name="expected_return_at" type="datetime-local" class="mt-1 w-full border rounded-md px-3 py-2">
+                                <label class="text-sm">Return date
+                                    <input name="expected_return_at" type="date" min="{{ now()->addDay()->toDateString() }}" required class="mt-1 w-full border rounded-md px-3 py-2">
                                 </label>
                                 <label class="text-sm md:col-span-2">Purpose
                                     <input name="purpose" type="text" minlength="5" maxlength="500" required class="mt-1 w-full border rounded-md px-3 py-2" placeholder="Why do you need to borrow this item?">

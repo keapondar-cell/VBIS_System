@@ -148,10 +148,12 @@ class InventoryHistoryController extends Controller
 
         if ($transactionType === 'borrow') {
             $data['purpose'] = $data['purpose'] ?? $request->input('notes');
-            $request->validate(['purpose' => 'required|string|min:5|max:500']);
+            $request->validate([
+                'purpose' => 'required|string|min:5|max:500',
+                'expected_return_at' => 'required|date|after:now',
+            ]);
             $data['notes'] = $data['purpose'];
             unset($data['purpose']);
-            $data['expected_return_at'] = $data['expected_return_at'] ?? null;
             $data['status'] = 'pending';
         } elseif ($transactionType === 'return') {
             $openBorrow = InventoryTransaction::where('item_id', $data['item_id'])

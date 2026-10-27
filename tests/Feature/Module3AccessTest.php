@@ -64,17 +64,29 @@ class Module3AccessTest extends TestCase
         $this->get('/inventory/qr/item/'.$item->id.'?action=borrow')
             ->assertOk()
             ->assertSee('Borrow '.$item->name)
+            ->assertSee('name="expected_return_at"', false)
+            ->assertSee('required', false)
             ->assertSee('Submit Borrow Request');
 
+        $returnDate = now()->addDays(2)->toDateString();
         $this->postJson('/inventory/transactions', [
             'item_id' => $item->id,
             'transaction_type' => 'borrow',
             'quantity' => 2,
             'purpose' => 'For classroom activity',
+            'expected_return_at' => $returnDate,
         ])->assertCreated()
-            ->assertJsonPath('status', 'pending');
+            ->assertJsonPath('status', 'pending')
+            ->assertJsonPath('expected_return_at', $returnDate.'T00:00:00.000000Z');
 
         $this->assertSame(5, $item->fresh()->quantity);
+        $this->assertDatabaseHas('inventory_transactions', [
+            'item_id' => $item->id,
+            'user_id' => $teacher->id,
+            'transaction_type' => 'borrow',
+            'expected_return_at' => $returnDate.' 00:00:00',
+            'status' => 'pending',
+        ]);
     }
 
     public function test_teacher_can_scan_an_item_qr_to_return_an_active_borrow(): void
