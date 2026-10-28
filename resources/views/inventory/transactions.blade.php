@@ -132,7 +132,7 @@
                         <select id="c_item_id" name="item_id" required>
                             <option value="">Select item</option>
                             @foreach($items ?? [] as $item)
-                                <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                <option value="{{ $item->id }}" data-category="{{ $item->category }}">{{ $item->name }}</option>
                             @endforeach
                         </select>
                     </label>
@@ -147,7 +147,7 @@
                     <label>Quantity <input id="c_quantity" name="quantity" type="number" min="1" value="1" required></label>
                     <label id="createPurposeField">Purpose <input id="c_purpose" name="purpose" placeholder="Specify the reason for borrowing"></label>
                     <label id="createRequestedAtField"><span id="createRequestedAtLabel">Date borrowed</span> <input id="c_requested_for_at" name="requested_for_at" type="datetime-local"></label>
-                    <label id="createExpectedReturnField">Expected Return <input id="c_expected_return_at" name="expected_return_at" type="datetime-local"></label>
+                    <label id="createExpectedReturnField"><span id="createExpectedReturnLabel">Expected Return</span> <input id="c_expected_return_at" name="expected_return_at" type="date"></label>
                     <label>User
                         <select id="c_user_id" name="user_id">
                             <option value="">Select user</option>
@@ -201,9 +201,18 @@
         function updateBorrowFields(){
             const isBorrow = createType.value === 'borrow';
             const isIssue = createType.value === 'issue';
+            const selectedItem = document.getElementById('c_item_id').selectedOptions[0];
+            const isConsumableIssue = isIssue
+                && (selectedItem?.dataset.category || '').trim().toLowerCase() === 'consumable';
             document.getElementById('createPurposeField').hidden = !isBorrow;
             document.getElementById('createRequestedAtField').hidden = !isBorrow && !isIssue;
-            document.getElementById('createExpectedReturnField').hidden = !isBorrow;
+            document.getElementById('createExpectedReturnField').hidden = (!isBorrow && !isIssue) || isConsumableIssue;
+            document.getElementById('createExpectedReturnLabel').textContent = isIssue ? 'Expected Return Date' : 'Expected Return';
+            const expectedReturnType = isBorrow ? 'datetime-local' : 'date';
+            if (expectedReturn.type !== expectedReturnType) {
+                expectedReturn.value = '';
+                expectedReturn.type = expectedReturnType;
+            }
             expectedReturn.required = isBorrow;
             document.getElementById('createRequestedAtLabel').textContent = isIssue ? 'Issue date' : 'Date borrowed';
             const requestedAtType = isIssue ? 'date' : 'datetime-local';
@@ -213,7 +222,7 @@
             }
             requestedAt.required = isIssue;
             createPurpose.required = isBorrow;
-            if (!isBorrow) {
+            if ((!isBorrow && !isIssue) || isConsumableIssue) {
                 expectedReturn.value = '';
             }
             if (!isBorrow && !isIssue) {
@@ -248,7 +257,7 @@
             const list = data.data || data;
             if(!list || list.length===0){ resultsEl.innerHTML = '<div class="muted">No transactions found.</div>'; return; }
 
-            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Issue / borrow date</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
+            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Issue / borrow date</th><th>Expected return</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
             const canEdit = @json(auth()->user()?->isTeacher() ?? false);
             const canManage = @json(auth()->user()?->isAdmin() || auth()->user()?->isPropertyCustodian());
             if(canEdit || canManage) html += '<th>Actions</th>';
@@ -260,6 +269,7 @@
                 const requestedFor = t.requested_for_at
                     ? formatManilaDateTime(t.requested_for_at, type !== 'issue')
                     : 'N/A';
+                const expectedReturnDate = formatManilaDateTime(t.expected_return_at, false);
                 let statusCell = escapeHtml(t.status || 'N/A');
                 let actions = '';
                 if (canManage && type === 'borrow' && t.status === 'pending') {
@@ -270,7 +280,7 @@
                     actions += `<button class="return-borrow" data-id="${t.id}" data-item-id="${t.item_id}" data-user-id="${t.user_id}" data-quantity="${t.quantity}">Mark as returned</button>`;
                 }
                 const notes = t.status === 'rejected' && t.rejection_reason ? `${t.notes || ''} | Rejection: ${t.rejection_reason}` : (t.notes || '');
-                html += `<tr class="link-row" data-id="${t.id}"><td>${t.id}</td><td>${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td>${typeLabel}</td><td>${t.quantity}</td><td>${escapeHtml(department)}</td><td>${escapeHtml(requestedFor)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td>${statusCell}</td><td>${escapeHtml(notes)}</td><td>${escapeHtml(formatManilaDateTime(t.created_at))}`;
+                html += `<tr class="link-row" data-id="${t.id}"><td>${t.id}</td><td>${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td>${typeLabel}</td><td>${t.quantity}</td><td>${escapeHtml(department)}</td><td>${escapeHtml(requestedFor)}</td><td>${escapeHtml(expectedReturnDate)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td>${statusCell}</td><td>${escapeHtml(notes)}</td><td>${escapeHtml(formatManilaDateTime(t.created_at))}`;
                 if(canEdit || canManage){ html += `<td><div class="action-buttons">${actions}</div></td>`; }
                 html += `</tr>`;
             });
@@ -331,6 +341,10 @@
             html += `<div><strong>Notes:</strong> ${escapeHtml(t.notes||'')}</div>`;
             if (t.rejection_reason) html += `<div><strong>Rejection reason:</strong> ${escapeHtml(t.rejection_reason)}</div>`;
             html += `<div><strong>Date:</strong> ${escapeHtml(formatManilaDateTime(t.created_at))}</div>`;
+            if ((t.transaction_type || '').toLowerCase() === 'issue') {
+                const receiptUrl = @json(route('inventory.transactions.receipt', ['id' => 'TRANSACTION_ID']));
+                html += `<div style="margin-top:16px"><a class="btn" href="${receiptUrl.replace('TRANSACTION_ID', encodeURIComponent(t.id))}">Download Memorandum Receipt (.docx)</a></div>`;
+            }
             if(item){ html += `<div style="margin-top:8px"><strong>Current Item Qty:</strong> ${item.quantity||'N/A'}</div>`; }
             detailContent.innerHTML = html;
         }
@@ -469,6 +483,7 @@
         document.getElementById('closeCreate').addEventListener('click', ()=>{ createModal.style.display='none'; });
         document.getElementById('cancelCreate').addEventListener('click', ()=>{ createModal.style.display='none'; });
         createType.addEventListener('change', updateBorrowFields);
+        document.getElementById('c_item_id').addEventListener('change', updateBorrowFields);
         updateBorrowFields();
 
         createForm.addEventListener('submit', async (e)=>{
@@ -488,9 +503,11 @@
                 department_id: document.getElementById('c_department_id').value || undefined,
                 notes: document.getElementById('c_notes').value || undefined,
             };
+            if (isBorrow || createType.value === 'issue') {
+                payload.expected_return_at = expectedReturn.value || undefined;
+            }
             if (isBorrow) {
                 payload.purpose = purpose;
-                payload.expected_return_at = expectedReturn.value || undefined;
             }
             if (isBorrow || createType.value === 'issue') {
                 payload.requested_for_at = requestedAt.value || undefined;

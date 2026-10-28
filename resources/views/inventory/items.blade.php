@@ -30,7 +30,9 @@
         .legacy-module-page td:last-child button+button { margin-left: 4px; }
         .items-search { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 16px; }
         .items-search input { min-width:280px; flex:1; max-width:560px; padding:9px 12px; border:1px solid #b9d0d5; border-radius:7px; background:#fff; }
+        .items-search select { min-width:160px; padding:9px 12px; border:1px solid #b9d0d5; border-radius:7px; background:#fff; }
         .items-search input:focus { outline:none; border-color:#287f92; box-shadow:0 0 0 3px rgba(47,154,145,.16); }
+        .items-search select:focus { outline:none; border-color:#287f92; box-shadow:0 0 0 3px rgba(47,154,145,.16); }
         .items-search button, .items-search a { display:inline-flex; align-items:center; gap:6px; padding:9px 13px; border:0; border-radius:7px; color:#fff; background:#0d67d8; text-decoration:none; cursor:pointer; }
         .items-search a { background:#64748b; }
         .pagination { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:12px; }
@@ -56,8 +58,26 @@
             @endif
             <form method="GET" action="{{ route('inventory.items.list') }}" class="items-search">
                 <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by item name, SKU, classification, or department" aria-label="Search inventory items">
+                <select name="classification" aria-label="Filter by classification">
+                    <option value="">All Classifications</option>
+                    @foreach($classifications as $classification)
+                        <option value="{{ $classification }}" @selected(request('classification') === $classification)>{{ $classification }}</option>
+                    @endforeach
+                </select>
+                <select name="location" aria-label="Filter by department">
+                    <option value="">All Departments</option>
+                    @foreach($locations as $location)
+                        <option value="{{ $location }}" @selected(request('location') === $location)>{{ $location }}</option>
+                    @endforeach
+                </select>
+                <select name="stock_status" aria-label="Filter by stock status">
+                    <option value="">All Stock Levels</option>
+                    <option value="available" @selected(request('stock_status') === 'available')>Available</option>
+                    <option value="low_stock" @selected(request('stock_status') === 'low_stock')>Low stock</option>
+                    <option value="out_of_stock" @selected(request('stock_status') === 'out_of_stock')>Out of stock</option>
+                </select>
                 <button type="submit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>Search</button>
-                @if(request('search'))<a href="{{ route('inventory.items.list') }}">Clear</a>@endif
+                @if(request()->hasAny(['search', 'classification', 'location', 'stock_status', 'low_stock']))<a href="{{ route('inventory.items.list') }}">Clear</a>@endif
             </form>
             <table>
                 <thead>
@@ -65,7 +85,7 @@
                 </thead>
                 <tbody>
                 @foreach($items as $item)
-                    <tr>
+                    <tr id="item-{{ $item->id }}">
                         <td>{{ $item->name }}</td>
                         <td>{{ $item->classification ?? $item->category ?? 'N/A' }}</td>
                         <td>{{ $item->quantity }}</td>

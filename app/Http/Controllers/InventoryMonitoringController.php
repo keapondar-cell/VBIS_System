@@ -268,7 +268,7 @@ class InventoryMonitoringController extends Controller
         $items = Item::where('name', 'like', "%{$q}%")
             ->orWhere('sku', 'like', "%{$q}%")
             ->limit(50)
-            ->get(['id','name','sku','quantity']);
+            ->get(['id','name','sku','quantity','category']);
 
         return response()->json($items);
     }
@@ -818,9 +818,41 @@ class InventoryMonitoringController extends Controller
             });
         }
 
+        if ($request->filled('classification')) {
+            $query->where('category', $request->input('classification'));
+        }
+
+        if ($request->filled('location')) {
+            $query->where('location', $request->input('location'));
+        }
+
+        if ($request->input('stock_status') === 'out_of_stock') {
+            $query->where('quantity', '<=', 0);
+        } elseif ($request->input('stock_status') === 'low_stock') {
+            $query->where('quantity', '>', 0)
+                ->where('quantity', '<=', self::LOW_STOCK_THRESHOLD);
+        } elseif ($request->input('stock_status') === 'available') {
+            $query->where('quantity', '>', self::LOW_STOCK_THRESHOLD);
+        } elseif ($request->input('low_stock') === '1') {
+            $query->where('quantity', '<=', self::LOW_STOCK_THRESHOLD);
+        }
+
         $items = $query->orderBy('name')->paginate(25)->withQueryString();
 
-        return view('inventory.items', ['items' => $items]);
+        $classifications = Item::query()
+            ->whereNotNull('category')
+            ->where('category', '<>', '')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
+        $locations = Item::query()
+            ->whereNotNull('location')
+            ->where('location', '<>', '')
+            ->distinct()
+            ->orderBy('location')
+            ->pluck('location');
+
+        return view('inventory.items', compact('items', 'classifications', 'locations'));
     }
 
     // API: create item

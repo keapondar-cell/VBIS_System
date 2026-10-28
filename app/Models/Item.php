@@ -33,6 +33,11 @@ class Item extends Model
         $this->attributes['category'] = $value;
     }
 
+    public function isConsumable(): bool
+    {
+        return strtolower(trim((string) $this->category)) === 'consumable';
+    }
+
     public function transactions()
     {
         return $this->hasMany(InventoryTransaction::class);

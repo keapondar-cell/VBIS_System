@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\User;
+use App\Exports\MemorandumReceiptExport;
 use App\Notifications\InventoryTransactionNotification;
 use App\Services\InventoryService;
 use App\Support\SchoolTime;
@@ -114,10 +115,27 @@ class InventoryHistoryController extends Controller
         return response()->json($transaction);
     }
 
+    public function memorandumReceipt($id)
+    {
+        $transaction = InventoryTransaction::with(['item', 'user', 'department'])->findOrFail($id);
+        $user = request()->user();
+        if (! $user || (! $user->isAdmin() && ! $user->isPropertyCustodian() && $transaction->user_id !== $user->id)) {
+            abort(403);
+        }
+
+        abort_unless($transaction->transaction_type === 'issue', 404);
+
+        return app(MemorandumReceiptExport::class)->download($transaction);
+    }
+
     public function store(Request $request)
     {
         $user = $request->user();
         $transactionType = strtolower((string) $request->input('transaction_type'));
+        $item = $transactionType === 'issue' ? Item::find($request->input('item_id')) : null;
+        if ($item?->isConsumable()) {
+            $request->merge(['expected_return_at' => null]);
+        }
         $expectedReturnIsFuture = SchoolTime::isFutureInput($request->input('expected_return_at'));
         $request->merge([
             'requested_for_at' => SchoolTime::normalizeInput($request->input('requested_for_at')),
@@ -237,6 +255,7 @@ class InventoryHistoryController extends Controller
                         'performed_by' => $request->user()?->id,
                         'affected_user_id' => $data['user_id'] ?? null,
                         'requested_for_at' => $data['requested_for_at'] ?? null,
+                        'expected_return_at' => $data['expected_return_at'] ?? null,
                         'reason' => $data['purpose'] ?? 'Inventory issue',
                         'notes' => $data['notes'] ?? null,
                     ]
@@ -318,7 +337,7 @@ class InventoryHistoryController extends Controller
     public function transactionsView()
     {
         return view('inventory.transactions', [
-            'items' => Item::orderBy('name')->get(['id', 'name']),
+            'items' => Item::orderBy('name')->get(['id', 'name', 'category']),
             'users' => User::orderBy('name')->get(),
             'departments' => Department::where('is_active', true)->orderBy('name')->get(),
         ]);

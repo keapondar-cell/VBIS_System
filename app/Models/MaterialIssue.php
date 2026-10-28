@@ -10,13 +10,14 @@ class MaterialIssue extends Model
     use HasFactory;
 
     protected $fillable = [
-        'item_id', 'issued_to_user_id', 'department_id', 'requested_for_at', 'quantity', 'status', 'approved_by', 'approved_at', 'notes', 'rejection_reason'
+        'item_id', 'issued_to_user_id', 'department_id', 'requested_for_at', 'expected_return_at', 'quantity', 'status', 'approved_by', 'approved_at', 'notes', 'rejection_reason'
     ];
 
     protected function casts(): array
     {
         return [
             'requested_for_at' => 'datetime',
+            'expected_return_at' => 'datetime',
         ];
     }
 

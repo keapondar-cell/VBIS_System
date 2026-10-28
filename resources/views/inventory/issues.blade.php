@@ -43,8 +43,8 @@
                         <label for="ci_requested_for_at" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">Requested date &amp; time</label>
                         <input id="ci_requested_for_at" type="datetime-local" required style="width:220px;padding:6px" aria-label="Requested date and time">
                     </div>
-                    <div id="ci_return_date_group" style="display:none;">
-                        <label for="ci_return_date" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">Return Date</label>
+                    <div id="ci_return_date_group">
+                        <label for="ci_return_date" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">Expected Return Date</label>
                         <input id="ci_return_date" type="date" style="width:170px;padding:6px" aria-label="Return date">
                     </div>
                     <input id="ci_user" type="text" placeholder="User ID or name" style="width:160px;padding:6px">
@@ -79,6 +79,7 @@
                 <label>Purpose<input id="edit_purpose" type="text" minlength="5" required></label>
                 <label>Department<select id="edit_department"><option value="">Select department</option>@foreach($departments ?? [] as $department)<option value="{{ $department->id }}">{{ $department->name }}</option>@endforeach</select></label>
                 <label>Requested date &amp; time<input id="edit_requested_for_at" type="datetime-local" required></label>
+                <label>Expected Return Date<input id="edit_expected_return_at" type="date"></label>
                 <div class="actions">
                     <button type="submit" class="btn">Save changes</button>
                     <button type="button" class="btn secondary" onclick="closeEditIssue()">Cancel</button>
@@ -126,7 +127,7 @@
             const data = await res.json();
             const list = data.data || data;
             if(!list || list.length===0){ document.getElementById('content').textContent = 'No issues.'; return; }
-            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>Qty</th><th>Purpose</th><th>Requested By</th><th>Department</th><th>Requested date &amp; time</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>Qty</th><th>Purpose</th><th>Requested By</th><th>Department</th><th>Requested date &amp; time</th><th>Expected return</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
             list.forEach(i=>{
                 const rel = i.issuedTo || i.issued_to;
                 const issuer = (rel && rel.name) ? rel.name : (i.issued_to_user_id || '');
@@ -135,8 +136,9 @@
                 const itemName = i.item ? escapeHtml(i.item.name) : i.item_id;
                 const departmentName = i.department ? escapeHtml(i.department.name) : 'Not selected';
                 const requestedFor = i.requested_for_at ? escapeHtml(formatManilaDateTime(i.requested_for_at)) : 'Not scheduled';
-                html += `<tr><td>${i.id}</td><td>${itemName}</td><td>${i.quantity}</td><td>${escapeHtml(purpose)}</td><td>${avatar ? `<img src="${escapeHtml(avatar)}" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;vertical-align:middle">` : ''}${escapeHtml(issuer)}</td><td>${departmentName}</td><td>${requestedFor}</td><td><span class="status ${escapeHtml(i.status)}">${escapeHtml(i.status)}</span></td><td>${escapeHtml(formatManilaDateTime(i.created_at))}</td><td class="actions">`;
-                if(i.status === 'pending' && currentUserId === i.issued_to_user_id && !canApprove){ html += `<button class="btn warning edit-issue-button" data-id="${i.id}" data-item-id="${i.item_id}" data-quantity="${i.quantity}" data-purpose="${escapeHtml(i.notes || '')}" data-department-id="${i.department_id || ''}" data-requested-for-at="${escapeHtml(i.requested_for_at || '')}">Edit</button>`; }
+                const expectedReturn = i.expected_return_at ? escapeHtml(formatManilaDateTime(i.expected_return_at, false)) : 'N/A';
+                html += `<tr><td>${i.id}</td><td>${itemName}</td><td>${i.quantity}</td><td>${escapeHtml(purpose)}</td><td>${avatar ? `<img src="${escapeHtml(avatar)}" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;vertical-align:middle">` : ''}${escapeHtml(issuer)}</td><td>${departmentName}</td><td>${requestedFor}</td><td>${expectedReturn}</td><td><span class="status ${escapeHtml(i.status)}">${escapeHtml(i.status)}</span></td><td>${escapeHtml(formatManilaDateTime(i.created_at))}</td><td class="actions">`;
+                if(i.status === 'pending' && currentUserId === i.issued_to_user_id && !canApprove){ html += `<button class="btn warning edit-issue-button" data-id="${i.id}" data-item-id="${i.item_id}" data-quantity="${i.quantity}" data-purpose="${escapeHtml(i.notes || '')}" data-department-id="${i.department_id || ''}" data-requested-for-at="${escapeHtml(i.requested_for_at || '')}" data-expected-return-at="${escapeHtml(i.expected_return_at || '')}">Edit</button>`; }
                 if(i.status==='pending'){
                     if(canApprove){ html += ` <button class="btn" onclick="approveIssue(${i.id})">Approve</button> <button class="btn danger" onclick="rejectIssue(${i.id})">Reject</button>`; }
                 }
@@ -158,7 +160,7 @@
         document.getElementById('content').addEventListener('click', (event)=>{
             const button = event.target.closest('.edit-issue-button');
             if(!button) return;
-            openEditIssue(button.dataset.id, button.dataset.itemId, button.dataset.quantity, button.dataset.purpose, button.dataset.departmentId, button.dataset.requestedForAt);
+            openEditIssue(button.dataset.id, button.dataset.itemId, button.dataset.quantity, button.dataset.purpose, button.dataset.departmentId, button.dataset.requestedForAt, button.dataset.expectedReturnAt);
         });
     </script>
 
@@ -174,11 +176,27 @@
 
         const sugBox = document.getElementById('ci_suggestions');
         const searchInput = document.getElementById('ci_item_search');
+        let selectedItemClassification = '';
         const requestTypeSelect = document.getElementById('ci_request_type');
         const returnDateGroup = document.getElementById('ci_return_date_group');
-        const requestedForInput = document.getElementById('ci_requested_for_at');
         const returnDateInput = document.getElementById('ci_return_date');
+        const requestedForInput = document.getElementById('ci_requested_for_at');
         const createIssueForm = document.getElementById('createIssueForm');
+
+        function updateExpectedReturnVisibility(){
+            if (!returnDateGroup || !requestTypeSelect) return;
+            const isConsumableIssue = requestTypeSelect.value === 'issue'
+                && selectedItemClassification.trim().toLowerCase() === 'consumable';
+            returnDateGroup.style.display = isConsumableIssue ? 'none' : 'block';
+            if (isConsumableIssue && returnDateInput) {
+                returnDateInput.value = '';
+            }
+        }
+
+        if (requestTypeSelect) {
+            requestTypeSelect.addEventListener('change', updateExpectedReturnVisibility);
+            updateExpectedReturnVisibility();
+        }
 
         function setRequestedForDefault(input){
             input.value = toManilaDateTimeLocal();
@@ -189,26 +207,13 @@
             async function renderSuggestions(q){
                 const items = await searchItems(q);
                 if(!items || items.length===0){ sugBox.style.display='none'; sugBox.innerHTML=''; return; }
-                sugBox.innerHTML = items.map(it=>`<div data-id="${it.id}" style="padding:8px;border-bottom:1px solid #f0f0f0;cursor:pointer">${it.name} <span style="color:#666;font-size:12px">(${it.sku||''})</span> <span style="float:right;color:#0b61d8">${it.quantity}</span></div>`).join('');
+                sugBox.innerHTML = items.map(it=>`<div data-id="${it.id}" data-category="${escapeHtml(it.category || '')}" style="padding:8px;border-bottom:1px solid #f0f0f0;cursor:pointer">${escapeHtml(it.name)} <span style="color:#666;font-size:12px">(${escapeHtml(it.sku||'')})</span> <span style="float:right;color:#0b61d8">${it.quantity}</span></div>`).join('');
                 sugBox.style.display='block';
-                Array.from(sugBox.children).forEach(ch=>{ ch.addEventListener('click', ()=>{ document.getElementById('ci_item').value = ch.getAttribute('data-id'); searchInput.value = ch.textContent.trim(); sugBox.style.display='none'; }); });
+                Array.from(sugBox.children).forEach(ch=>{ ch.addEventListener('click', ()=>{ document.getElementById('ci_item').value = ch.getAttribute('data-id'); searchInput.value = ch.textContent.trim(); selectedItemClassification = ch.dataset.category || ''; sugBox.style.display='none'; updateExpectedReturnVisibility(); }); });
             }
 
-            searchInput.addEventListener('input', debounce((e)=>{ const v=e.target.value; document.getElementById('ci_item').value=''; renderSuggestions(v); }, 250));
+            searchInput.addEventListener('input', debounce((e)=>{ const v=e.target.value; document.getElementById('ci_item').value=''; selectedItemClassification = ''; updateExpectedReturnVisibility(); renderSuggestions(v); }, 250));
             document.addEventListener('click', (ev)=>{ if(!ev.target.closest('#ci_suggestions') && ev.target !== searchInput) sugBox.style.display='none'; });
-        }
-
-        if (requestTypeSelect && returnDateGroup && returnDateInput) {
-            function toggleBorrowFields() {
-                const isBorrow = (requestTypeSelect.value || 'issue') === 'borrow';
-                returnDateGroup.style.display = isBorrow ? 'block' : 'none';
-                if (!isBorrow) {
-                    returnDateInput.value = '';
-                }
-            }
-
-            requestTypeSelect.addEventListener('change', toggleBorrowFields);
-            toggleBorrowFields();
         }
 
         if (createIssueForm) {
@@ -220,7 +225,9 @@
                 const requestType = document.getElementById('ci_request_type').value || 'issue';
                 const itemId = Number(document.getElementById('ci_item').value || 0);
                 const requestedForAt = requestedForInput.value || null;
-                const returnDate = document.getElementById('ci_return_date').value || null;
+                const isConsumableIssue = requestType === 'issue'
+                    && selectedItemClassification.trim().toLowerCase() === 'consumable';
+                const returnDate = isConsumableIssue ? null : (document.getElementById('ci_return_date').value || null);
 
                 if(!itemId){ document.getElementById('createMsg').textContent='Please select an item from suggestions.'; return; }
                 if(!purpose){ document.getElementById('createMsg').textContent='Please specify the purpose for this request.'; return; }
@@ -234,6 +241,7 @@
                     purpose,
                     department_id: deptId,
                     requested_for_at: requestedForAt,
+                    expected_return_at: returnDate,
                     issued_to_user_id: document.getElementById('ci_user').value || null,
                 };
 
@@ -266,9 +274,8 @@
                     document.getElementById('createMsg').textContent = requestType === 'borrow' ? successText : (j && j.over_requested ? 'Requested, but exceeds available stock.' : successText);
                     document.getElementById('createIssueForm').reset();
                     setRequestedForDefault(requestedForInput);
-                    if (typeof toggleBorrowFields === 'function') {
-                        toggleBorrowFields();
-                    }
+                    selectedItemClassification = '';
+                    updateExpectedReturnVisibility();
                     load();
                 } else {
                     let text = '';
@@ -282,8 +289,9 @@
         async function rejectIssue(id){ const reason = prompt('Why are you rejecting issue #'+id+'?'); if(reason === null || !reason.trim()) return; const res = await fetch('/inventory/issues/'+id+'/reject', { method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify({reason:reason.trim()}) }); const j = await res.json().catch(()=>({error:'error'})); if(res.ok) load(); else alert(j.error||JSON.stringify(j)); }
 
         function toDateTimeLocal(value){ return toManilaDateTimeLocal(value); }
-        function openEditIssue(id, itemId, quantity, purpose, departmentId, requestedForAt){ document.getElementById('edit_issue_id').value=id; document.getElementById('edit_item_id').value=itemId; document.getElementById('edit_quantity').value=quantity; document.getElementById('edit_purpose').value=purpose; document.getElementById('edit_department').value=departmentId || ''; document.getElementById('edit_requested_for_at').value=toDateTimeLocal(requestedForAt); document.getElementById('editIssueModal').style.display='flex'; }
+        function toManilaDate(value){ if(!value) return ''; const date=new Date(value); if(Number.isNaN(date.getTime())) return ''; const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date).reduce((result,part)=>{result[part.type]=part.value;return result;},{}); return `${parts.year}-${parts.month}-${parts.day}`; }
+        function openEditIssue(id, itemId, quantity, purpose, departmentId, requestedForAt, expectedReturnAt){ document.getElementById('edit_issue_id').value=id; document.getElementById('edit_item_id').value=itemId; document.getElementById('edit_quantity').value=quantity; document.getElementById('edit_purpose').value=purpose; document.getElementById('edit_department').value=departmentId || ''; document.getElementById('edit_requested_for_at').value=toDateTimeLocal(requestedForAt); document.getElementById('edit_expected_return_at').value=toManilaDate(expectedReturnAt); document.getElementById('editIssueModal').style.display='flex'; }
         function closeEditIssue(){ document.getElementById('editIssueModal').style.display='none'; document.getElementById('editIssueMsg').textContent=''; }
-        document.getElementById('editIssueForm').addEventListener('submit', async (event)=>{ event.preventDefault(); const id=document.getElementById('edit_issue_id').value; const payload={item_id:Number(document.getElementById('edit_item_id').value),quantity:Number(document.getElementById('edit_quantity').value),purpose:document.getElementById('edit_purpose').value,department_id:document.getElementById('edit_department').value || null,requested_for_at:document.getElementById('edit_requested_for_at').value || null}; const res=await fetch('/inventory/issues/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf},body:JSON.stringify(payload)}); if(res.ok){closeEditIssue();load();}else{document.getElementById('editIssueMsg').textContent='Unable to update this request.';} });
+        document.getElementById('editIssueForm').addEventListener('submit', async (event)=>{ event.preventDefault(); const id=document.getElementById('edit_issue_id').value; const payload={item_id:Number(document.getElementById('edit_item_id').value),quantity:Number(document.getElementById('edit_quantity').value),purpose:document.getElementById('edit_purpose').value,department_id:document.getElementById('edit_department').value || null,requested_for_at:document.getElementById('edit_requested_for_at').value || null,expected_return_at:document.getElementById('edit_expected_return_at').value || null}; const res=await fetch('/inventory/issues/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf},body:JSON.stringify(payload)}); if(res.ok){closeEditIssue();load();}else{document.getElementById('editIssueMsg').textContent='Unable to update this request.';} });
     </script>
 </x-app-layout>

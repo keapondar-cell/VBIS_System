@@ -32,6 +32,78 @@ class InventoryHistoryTest extends TestCase
         $pdf->assertHeader('Content-Disposition');
     }
 
+    public function test_transaction_form_includes_expected_return_for_material_issues(): void
+    {
+        Item::factory()->create(['category' => 'Consumable']);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get('/inventory/transactions/list')
+            ->assertOk()
+            ->assertSee('Expected Return Date')
+            ->assertSee('data-category="Consumable"', false)
+            ->assertSee('expectedReturnDate')
+            ->assertSee("payload.expected_return_at = expectedReturn.value || undefined;", false);
+    }
+
+    public function test_issue_transaction_can_be_downloaded_as_an_editable_memorandum_receipt(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create([
+            'name' => 'Classroom Microscope',
+            'sku' => 'MICRO-001',
+            'category' => 'Science Equipment',
+        ]);
+        $transaction = InventoryTransaction::factory()->create([
+            'item_id' => $item->id,
+            'user_id' => $teacher->id,
+            'transaction_type' => 'issue',
+            'quantity' => 2,
+            'expected_return_at' => '2026-11-05 00:00:00',
+        ]);
+
+        $response = $this->actingAs($teacher)
+            ->get('/inventory/transactions/'.$transaction->id.'/memorandum-receipt')
+            ->assertOk()
+            ->assertDownload('memorandum_receipt_MR-'.now()->format('Y').'-'.$transaction->id.'.docx')
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+        $docx = $response->streamedContent();
+        $this->assertStringStartsWith('PK', $docx);
+
+        $path = tempnam(sys_get_temp_dir(), 'vbis-receipt-test-');
+        $this->assertNotFalse($path);
+        try {
+            file_put_contents($path, $docx);
+            $archive = new \ZipArchive();
+            $this->assertSame(true, $archive->open($path));
+            $documentXml = $archive->getFromName('word/document.xml');
+            $archive->close();
+
+            $this->assertIsString($documentXml);
+            $this->assertStringContainsString('MEMORANDUM RECEIPT', $documentXml);
+            $this->assertStringContainsString('Classroom Microscope', $documentXml);
+            $this->assertStringContainsString('MICRO-001', $documentXml);
+            $this->assertStringContainsString('Science Equipment', $documentXml);
+            $this->assertStringContainsString('Expected return:', $documentXml);
+        } finally {
+            unlink($path);
+        }
+    }
+
+    public function test_teacher_cannot_download_another_users_memorandum_receipt(): void
+    {
+        $owner = User::factory()->create(['role' => 'teacher']);
+        $otherTeacher = User::factory()->create(['role' => 'teacher']);
+        $transaction = InventoryTransaction::factory()->create([
+            'user_id' => $owner->id,
+            'transaction_type' => 'issue',
+        ]);
+
+        $this->actingAs($otherTeacher)
+            ->get('/inventory/transactions/'.$transaction->id.'/memorandum-receipt')
+            ->assertForbidden();
+    }
+
     public function test_issue_transaction_records_the_selected_issue_date(): void
     {
         $custodian = User::factory()->create(['role' => 'property_custodian']);
@@ -42,6 +114,7 @@ class InventoryHistoryTest extends TestCase
             'transaction_type' => 'issue',
             'quantity' => 1,
             'requested_for_at' => '2026-10-24',
+            'expected_return_at' => now('Asia/Manila')->addDays(3)->toDateString(),
         ]);
 
         $response->assertCreated();
@@ -49,6 +122,28 @@ class InventoryHistoryTest extends TestCase
         $this->assertDatabaseHas('inventory_transactions', [
             'id' => $response->json('id'),
             'requested_for_at' => '2026-10-24 00:00:00',
+            'expected_return_at' => now('Asia/Manila')->addDays(3)->toDateString().' 00:00:00',
+        ]);
+    }
+
+    public function test_consumable_issue_transaction_ignores_expected_return_date(): void
+    {
+        $custodian = User::factory()->create(['role' => 'property_custodian']);
+        $item = Item::factory()->create([
+            'quantity' => 5,
+            'category' => 'Consumable',
+        ]);
+
+        $response = $this->actingAs($custodian)->postJson('/inventory/transactions', [
+            'item_id' => $item->id,
+            'transaction_type' => 'issue',
+            'quantity' => 1,
+            'expected_return_at' => 'not-a-valid-date',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('inventory_transactions', [
+            'id' => $response->json('id'),
+            'expected_return_at' => null,
         ]);
     }
 

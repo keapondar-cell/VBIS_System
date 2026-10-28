@@ -50,16 +50,19 @@ class MaterialIssuanceTest extends TestCase
                 'item_id' => $newItem->id,
                 'quantity' => 3,
                 'purpose' => 'Updated classroom purpose',
+                'expected_return_at' => now('Asia/Manila')->addDays(3)->toDateString(),
             ])
             ->assertOk()
             ->assertJsonPath('quantity', 3);
 
         $this->assertSame('Updated classroom purpose', $issue->fresh()->notes);
+        $this->assertNotNull($issue->fresh()->expected_return_at);
     }
 
     public function test_material_issue_page_exposes_borrow_option_for_teachers(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
+        Item::factory()->create(['name' => 'Consumable Materials', 'category' => 'Consumable']);
 
         $this->actingAs($teacher)
             ->get('/inventory/issues/list')
@@ -72,7 +75,65 @@ class MaterialIssuanceTest extends TestCase
             ->assertSee('JHS Department')
             ->assertSee('SHS Department')
             ->assertSee('Requested date & time')
+            ->assertSee('Expected Return Date')
+            ->assertSee("selectedItemClassification.trim().toLowerCase() === 'consumable'", false)
             ->assertSee('type="datetime-local"', false);
+
+        $this->getJson('/inventory/items/search?q=Consumable')
+            ->assertOk()
+            ->assertJsonPath('0.category', 'Consumable');
+    }
+
+    public function test_consumable_material_issue_does_not_save_or_copy_an_expected_return_date(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::factory()->create(['category' => ' consumable ']);
+
+        $response = $this->actingAs($teacher)->postJson('/inventory/issues', [
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'purpose' => 'Consumable classroom supplies',
+            'expected_return_at' => 'not-a-valid-date',
+        ])->assertCreated();
+
+        $issueId = $response->json('id');
+        $this->assertDatabaseHas('material_issues', [
+            'id' => $issueId,
+            'expected_return_at' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson('/inventory/issues/'.$issueId.'/approve')
+            ->assertOk();
+
+        $this->assertDatabaseHas('inventory_transactions', [
+            'transaction_type' => 'issue',
+            'expected_return_at' => null,
+        ]);
+    }
+
+    public function test_editing_consumable_material_issue_clears_expected_return_date(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create(['category' => 'Consumable']);
+        $issue = MaterialIssue::factory()->create([
+            'item_id' => $item->id,
+            'issued_to_user_id' => $teacher->id,
+            'expected_return_at' => now()->addDays(2),
+        ]);
+
+        $this->actingAs($teacher)
+            ->patchJson('/inventory/issues/'.$issue->id, [
+                'item_id' => $item->id,
+                'quantity' => $issue->quantity,
+                'purpose' => 'Update consumable supply request',
+                'expected_return_at' => now()->addDays(3)->toDateString(),
+            ])
+            ->assertOk()
+            ->assertJsonPath('expected_return_at', null);
+
+        $this->assertNull($issue->fresh()->expected_return_at);
     }
 
     public function test_teacher_can_request_item_for_department_and_requested_time(): void
@@ -81,6 +142,7 @@ class MaterialIssuanceTest extends TestCase
         $item = Item::factory()->create();
         $department = Department::where('name', 'Computer Lab')->firstOrFail();
         $requestedFor = now()->addDays(2)->setTime(14, 30)->format('Y-m-d\TH:i');
+        $expectedReturn = now('Asia/Manila')->addDays(4)->toDateString();
 
         $response = $this->actingAs($teacher)->postJson('/inventory/issues', [
             'item_id' => $item->id,
@@ -88,6 +150,7 @@ class MaterialIssuanceTest extends TestCase
             'purpose' => 'For scheduled class use',
             'department_id' => $department->id,
             'requested_for_at' => $requestedFor,
+            'expected_return_at' => $expectedReturn,
         ]);
 
         $response->assertCreated();
@@ -95,6 +158,16 @@ class MaterialIssuanceTest extends TestCase
             'id' => $response->json('id'),
             'department_id' => $department->id,
             'requested_for_at' => CarbonImmutable::parse($requestedFor, 'Asia/Manila')->utc()->format('Y-m-d H:i:s'),
+            'expected_return_at' => $expectedReturn.' 00:00:00',
+        ]);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->postJson('/inventory/issues/'.$response->json('id').'/approve')
+            ->assertOk();
+
+        $this->assertDatabaseHas('inventory_transactions', [
+            'transaction_type' => 'issue',
+            'expected_return_at' => $expectedReturn.' 00:00:00',
         ]);
     }
 

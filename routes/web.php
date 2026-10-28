@@ -48,6 +48,7 @@ Route::prefix('inventory')->middleware('auth')->name('inventory.')->group(functi
     // Inventory history / transactions
     Route::get('transactions', [InventoryHistoryController::class, 'index'])->name('transactions.index');
     Route::get('transactions/list', [InventoryHistoryController::class, 'transactionsView'])->name('transactions.list');
+    Route::get('transactions/{id}/memorandum-receipt', [InventoryHistoryController::class, 'memorandumReceipt'])->whereNumber('id')->name('transactions.receipt');
     Route::get('transactions/{id}', [InventoryHistoryController::class, 'show'])->whereNumber('id')->name('transactions.show');
     Route::post('transactions', [InventoryHistoryController::class, 'store'])->name('transactions.store');
     Route::post('transactions/{id}/approve', [InventoryHistoryController::class, 'approve'])->name('transactions.approve');

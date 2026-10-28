@@ -28,6 +28,64 @@ class InventoryMonitoringTest extends TestCase
         $this->assertStringContainsString('<svg', $qr->getContent());
     }
 
+    public function test_inventory_items_can_be_filtered_by_search_classification_location_and_stock_level(): void
+    {
+        Item::factory()->create([
+            'name' => 'Filtered Gauze',
+            'sku' => 'FILTERED-GAUZE',
+            'category' => 'Consumable',
+            'location' => 'Science Lab',
+            'quantity' => 4,
+        ]);
+        Item::factory()->create([
+            'name' => 'Other Classification',
+            'category' => 'Glassware',
+            'location' => 'Science Lab',
+            'quantity' => 4,
+        ]);
+        Item::factory()->create([
+            'name' => 'Other Department',
+            'category' => 'Consumable',
+            'location' => 'Library',
+            'quantity' => 4,
+        ]);
+        Item::factory()->create([
+            'name' => 'Out of Stock Gauze',
+            'category' => 'Consumable',
+            'location' => 'Science Lab',
+            'quantity' => 0,
+        ]);
+
+        $user = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($user)
+            ->get('/inventory/items/list?'.http_build_query([
+                'search' => 'Filtered',
+                'classification' => 'Consumable',
+                'location' => 'Science Lab',
+                'stock_status' => 'low_stock',
+            ]))
+            ->assertOk()
+            ->assertSee('Filtered Gauze')
+            ->assertDontSee('Other Classification')
+            ->assertDontSee('Other Department')
+            ->assertDontSee('Out of Stock Gauze')
+            ->assertSee('name="stock_status"', false)
+            ->assertSee('value="low_stock" selected', false);
+    }
+
+    public function test_inventory_items_low_stock_link_filters_items_and_keeps_anchor_targets(): void
+    {
+        $lowStock = Item::factory()->create(['name' => 'Low Stock Supply', 'quantity' => 5]);
+        Item::factory()->create(['name' => 'Healthy Supply', 'quantity' => 6]);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get('/inventory/items/list?low_stock=1#item-'.$lowStock->id)
+            ->assertOk()
+            ->assertSee('Low Stock Supply')
+            ->assertDontSee('Healthy Supply')
+            ->assertSee('id="item-'.$lowStock->id.'"', false);
+    }
+
     public function test_realtime_data_is_limited_and_prioritizes_the_lowest_stock_items()
     {
         $this->actingAs(User::factory()->create());

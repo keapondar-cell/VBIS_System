@@ -36,8 +36,14 @@ class MaterialIssuanceController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
+        $item = Item::find($request->input('item_id'));
+        if ($item?->isConsumable()) {
+            $request->merge(['expected_return_at' => null]);
+        }
+        $expectedReturnIsFuture = SchoolTime::isFutureInput($request->input('expected_return_at'));
         $request->merge([
             'requested_for_at' => SchoolTime::normalizeInput($request->input('requested_for_at')),
+            'expected_return_at' => SchoolTime::normalizeInput($request->input('expected_return_at')),
         ]);
 
         // Teachers and admins can create material requests.
@@ -50,6 +56,15 @@ class MaterialIssuanceController extends Controller
             'issued_to_user_id' => 'nullable', // may be numeric id or username/email
             'department_id' => 'nullable|integer|exists:departments,id',
             'requested_for_at' => 'nullable|date',
+            'expected_return_at' => [
+                'nullable',
+                'date',
+                function ($attribute, $value, $fail) use ($expectedReturnIsFuture) {
+                    if (! $expectedReturnIsFuture) {
+                        $fail('The expected return date must be in the future in Philippine time.');
+                    }
+                },
+            ],
             'quantity' => 'required|integer|min:1',
             'purpose' => 'required|string|min:5|max:500',
         ]);
@@ -157,6 +172,8 @@ class MaterialIssuanceController extends Controller
                 'department_id' => $issue->department_id,
                 'transaction_type' => 'issue',
                 'quantity' => $issue->quantity,
+                'requested_for_at' => $issue->requested_for_at,
+                'expected_return_at' => $issue->expected_return_at,
                 'notes' => 'Issued via approval id '.$issue->id,
             ]);
 
@@ -220,8 +237,14 @@ class MaterialIssuanceController extends Controller
             return response()->json(['error' => 'Only pending requests can be edited.'], 422);
         }
 
+        $item = Item::find($request->input('item_id'));
+        if ($item?->isConsumable()) {
+            $request->merge(['expected_return_at' => null]);
+        }
+        $expectedReturnIsFuture = SchoolTime::isFutureInput($request->input('expected_return_at'));
         $request->merge([
             'requested_for_at' => SchoolTime::normalizeInput($request->input('requested_for_at')),
+            'expected_return_at' => SchoolTime::normalizeInput($request->input('expected_return_at')),
         ]);
 
         $data = $request->validate([
@@ -230,6 +253,15 @@ class MaterialIssuanceController extends Controller
             'purpose' => 'required|string|min:5|max:500',
             'department_id' => 'nullable|integer|exists:departments,id',
             'requested_for_at' => 'nullable|date',
+            'expected_return_at' => [
+                'nullable',
+                'date',
+                function ($attribute, $value, $fail) use ($expectedReturnIsFuture) {
+                    if (! $expectedReturnIsFuture) {
+                        $fail('The expected return date must be in the future in Philippine time.');
+                    }
+                },
+            ],
         ]);
 
         $issue->update([
@@ -237,6 +269,7 @@ class MaterialIssuanceController extends Controller
             'quantity' => $data['quantity'],
             'department_id' => $data['department_id'] ?? null,
             'requested_for_at' => $data['requested_for_at'] ?? null,
+            'expected_return_at' => $data['expected_return_at'] ?? null,
             'notes' => $data['purpose'],
         ]);
 
