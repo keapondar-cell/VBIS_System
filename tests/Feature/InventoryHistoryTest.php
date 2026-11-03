@@ -67,7 +67,7 @@ class InventoryHistoryTest extends TestCase
             ->assertDownload('memorandum_receipt_MR-'.now()->format('Y').'-'.$transaction->id.'.docx')
             ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
-        $docx = $response->streamedContent();
+        $docx = $response->getContent();
         $this->assertStringStartsWith('PK', $docx);
 
         $path = tempnam(sys_get_temp_dir(), 'vbis-receipt-test-');

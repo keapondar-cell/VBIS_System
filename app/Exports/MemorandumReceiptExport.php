@@ -6,13 +6,14 @@ use App\Models\InventoryTransaction;
 use App\Support\SchoolTime;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\Response;
+use RuntimeException;
 
 class MemorandumReceiptExport
 {
     private const TABLE_WIDTH = 10500;
 
-    public function download(InventoryTransaction $transaction): StreamedResponse
+    public function download(InventoryTransaction $transaction): Response
     {
         $document = new PhpWord();
         $document->setDefaultFontName('Arial');
@@ -170,11 +171,28 @@ class MemorandumReceiptExport
 
         $writer = IOFactory::createWriter($document, 'Word2007');
         $filename = 'memorandum_receipt_MR-'.now()->format('Y').'-'.$transaction->id.'.docx';
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'vbis-receipt-');
 
-        return response()->streamDownload(
-            static fn () => $writer->save('php://output'),
-            $filename,
-            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-        );
+        if ($temporaryFile === false) {
+            throw new RuntimeException('Unable to create a temporary memorandum receipt file.');
+        }
+
+        try {
+            $writer->save($temporaryFile);
+            $contents = file_get_contents($temporaryFile);
+
+            if ($contents === false) {
+                throw new RuntimeException('Unable to read the generated memorandum receipt file.');
+            }
+        } finally {
+            if (is_file($temporaryFile)) {
+                unlink($temporaryFile);
+            }
+        }
+
+        return response($contents, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
     }
 }
