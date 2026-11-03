@@ -4,9 +4,10 @@ namespace App\Exports;
 
 use App\Models\InventoryTransaction;
 use App\Support\SchoolTime;
+use Illuminate\Http\Response;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
-use Illuminate\Http\Response;
+use PhpOffice\PhpWord\Settings;
 use RuntimeException;
 
 class MemorandumReceiptExport
@@ -169,7 +170,6 @@ class MemorandumReceiptExport
         $approvals->addCell(5250)->addText('Supply Officer', null, $center);
         $approvals->addCell(5250)->addText('School Head', null, $center);
 
-        $writer = IOFactory::createWriter($document, 'Word2007');
         $filename = 'memorandum_receipt_MR-'.now()->format('Y').'-'.$transaction->id.'.docx';
         $temporaryFile = tempnam(sys_get_temp_dir(), 'vbis-receipt-');
 
@@ -177,7 +177,14 @@ class MemorandumReceiptExport
             throw new RuntimeException('Unable to create a temporary memorandum receipt file.');
         }
 
+        $zipClass = Settings::getZipClass();
+
         try {
+            if (! class_exists(\ZipArchive::class)) {
+                Settings::setZipClass(Settings::PCLZIP);
+            }
+
+            $writer = IOFactory::createWriter($document, 'Word2007');
             $writer->save($temporaryFile);
             $contents = file_get_contents($temporaryFile);
 
@@ -185,6 +192,8 @@ class MemorandumReceiptExport
                 throw new RuntimeException('Unable to read the generated memorandum receipt file.');
             }
         } finally {
+            Settings::setZipClass($zipClass);
+
             if (is_file($temporaryFile)) {
                 unlink($temporaryFile);
             }

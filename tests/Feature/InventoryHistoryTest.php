@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PhpOffice\PhpWord\Settings;
+use PhpOffice\PhpWord\Shared\ZipArchive;
+use Tests\TestCase;
 
 class InventoryHistoryTest extends TestCase
 {
@@ -61,20 +63,29 @@ class InventoryHistoryTest extends TestCase
             'expected_return_at' => '2026-11-05 00:00:00',
         ]);
 
-        $response = $this->actingAs($teacher)
-            ->get('/inventory/transactions/'.$transaction->id.'/memorandum-receipt')
-            ->assertOk()
-            ->assertDownload('memorandum_receipt_MR-'.now()->format('Y').'-'.$transaction->id.'.docx')
-            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        $zipClass = Settings::getZipClass();
+        Settings::setZipClass(Settings::PCLZIP);
+
+        try {
+            $response = $this->actingAs($teacher)
+                ->get('/inventory/transactions/'.$transaction->id.'/memorandum-receipt')
+                ->assertOk()
+                ->assertDownload('memorandum_receipt_MR-'.now()->format('Y').'-'.$transaction->id.'.docx')
+                ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        } finally {
+            Settings::setZipClass($zipClass);
+        }
 
         $docx = $response->getContent();
         $this->assertStringStartsWith('PK', $docx);
 
         $path = tempnam(sys_get_temp_dir(), 'vbis-receipt-test-');
         $this->assertNotFalse($path);
+        $zipClass = Settings::getZipClass();
+        Settings::setZipClass(Settings::PCLZIP);
         try {
             file_put_contents($path, $docx);
-            $archive = new \ZipArchive();
+            $archive = new ZipArchive();
             $this->assertSame(true, $archive->open($path));
             $documentXml = $archive->getFromName('word/document.xml');
             $archive->close();
@@ -86,6 +97,7 @@ class InventoryHistoryTest extends TestCase
             $this->assertStringContainsString('Science Equipment', $documentXml);
             $this->assertStringContainsString('Expected return:', $documentXml);
         } finally {
+            Settings::setZipClass($zipClass);
             unlink($path);
         }
     }
