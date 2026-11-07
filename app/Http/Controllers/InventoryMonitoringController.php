@@ -804,9 +804,18 @@ class InventoryMonitoringController extends Controller
         return view('inventory.dashboard', ['summary' => $summary]);
     }
 
-    public function itemsView(Request $request)
+    public function itemsView(Request $request, bool $consumablesOnly = false)
     {
         $query = Item::query();
+
+        if ($consumablesOnly) {
+            $query->whereRaw('LOWER(TRIM(category)) = ?', ['consumable']);
+        } else {
+            $query->where(function ($itemQuery) {
+                $itemQuery->whereNull('category')
+                    ->orWhereRaw('LOWER(TRIM(category)) <> ?', ['consumable']);
+            });
+        }
 
         if ($request->filled('search')) {
             $search = trim($request->input('search'));
@@ -839,9 +848,12 @@ class InventoryMonitoringController extends Controller
 
         $items = $query->orderBy('name')->paginate(25)->withQueryString();
 
-        $classifications = Item::query()
+        $classificationsQuery = Item::query()
             ->whereNotNull('category')
             ->where('category', '<>', '')
+            ->when(! $consumablesOnly, fn ($classificationQuery) => $classificationQuery
+                ->whereRaw('LOWER(TRIM(category)) <> ?', ['consumable']));
+        $classifications = $classificationsQuery
             ->distinct()
             ->orderBy('category')
             ->pluck('category');
@@ -852,7 +864,12 @@ class InventoryMonitoringController extends Controller
             ->orderBy('location')
             ->pluck('location');
 
-        return view('inventory.items', compact('items', 'classifications', 'locations'));
+        return view('inventory.items', compact('items', 'classifications', 'locations', 'consumablesOnly'));
+    }
+
+    public function consumablesView(Request $request)
+    {
+        return $this->itemsView($request, true);
     }
 
     // API: create item

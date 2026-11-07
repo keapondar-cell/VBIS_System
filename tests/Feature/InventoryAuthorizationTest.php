@@ -66,6 +66,10 @@ class InventoryAuthorizationTest extends TestCase
             ->assertOk()
             ->assertSee('<th>Name</th>', false)
             ->assertSee('<th>Date Added</th>', false)
+            ->assertSee('aria-label="Generate QR codes for Desk Lamp"', false)
+            ->assertSee('aria-label="Edit Desk Lamp"', false)
+            ->assertSee('aria-label="Delete Desk Lamp"', false)
+            ->assertSee('<svg viewBox="0 0 24 24"', false)
             ->assertSee('type="datetime-local"', false)
             ->assertSee('Date and Time Added')
             ->assertSee('Oct 25, 2026 09:00 AM')
@@ -237,9 +241,10 @@ class InventoryAuthorizationTest extends TestCase
             ->assertStatus(302);
     }
 
-    public function test_property_custodian_cannot_create_material_request()
+    public function test_property_custodian_can_create_material_request_for_a_selected_user()
     {
         $user = User::factory()->create(['role' => 'property_custodian']);
+        $recipient = User::factory()->create(['role' => 'teacher']);
         $item = Item::factory()->create(['quantity' => 10]);
 
         $this->actingAs($user)
@@ -247,8 +252,15 @@ class InventoryAuthorizationTest extends TestCase
                 'item_id' => $item->id,
                 'quantity' => 1,
                 'purpose' => 'For office use',
+                'issued_to_user_id' => $recipient->id,
             ])
-            ->assertStatus(403);
+            ->assertStatus(201);
+
+        $this->assertDatabaseHas('material_issues', [
+            'item_id' => $item->id,
+            'issued_to_user_id' => $recipient->id,
+            'status' => 'pending',
+        ]);
     }
 
     public function test_admin_can_delete_user()

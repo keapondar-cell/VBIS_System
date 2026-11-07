@@ -40,9 +40,11 @@
     <div class="school-sidebar-section">Workspace</div>
     <div class="school-sidebar-links">
         <x-nav-link class="school-sidebar-link" :href="route('inventory.dashboard')" :active="request()->routeIs('inventory.dashboard')"><span class="school-sidebar-icon">⌂</span>{{ __('Dashboard') }}</x-nav-link>
-        <x-nav-link class="school-sidebar-link" :href="route('inventory.items.list')" :active="request()->routeIs('inventory.items.*')"><span class="school-sidebar-icon">▦</span>{{ __('Inventory') }}</x-nav-link>
-        <x-nav-link class="school-sidebar-link" :href="route('inventory.issues.list')" :active="request()->routeIs('inventory.issues.*')"><span class="school-sidebar-icon">▣</span>{{ __('Requests') }}</x-nav-link>
-        <x-nav-link class="school-sidebar-link" :href="route('inventory.transactions.list')" :active="request()->routeIs('inventory.transactions.*')"><span class="school-sidebar-icon">↔</span>{{ __('Transactions') }}</x-nav-link>
+        <x-nav-link class="school-sidebar-link" :href="route('inventory.items.list')" :active="request()->routeIs('inventory.items.*') && !request()->routeIs('inventory.consumables.*')"><span class="school-sidebar-icon">▦</span>{{ __('Inventory') }}</x-nav-link>
+        <x-nav-link class="school-sidebar-link" :href="route('inventory.consumables.list')" :active="request()->routeIs('inventory.consumables.*')"><span class="school-sidebar-icon">▤</span>{{ __('Consumables') }}</x-nav-link>
+        <x-nav-link class="school-sidebar-link" :href="route('inventory.borrowing.list')" :active="request()->routeIs('inventory.borrowing.*')"><span class="school-sidebar-icon">↔</span>{{ __('Borrowing') }}</x-nav-link>
+        <x-nav-link class="school-sidebar-link" :href="route('inventory.issues.list')" :active="request()->routeIs('inventory.issues.*')"><span class="school-sidebar-icon">▣</span>{{ __('Material Issuance') }}</x-nav-link>
+        <x-nav-link class="school-sidebar-link" :href="route('inventory.transactions.list')" :active="request()->routeIs('inventory.transactions.list')"><span class="school-sidebar-icon">◷</span>{{ __('Transactions') }}</x-nav-link>
         @if(auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian())
             <x-nav-link class="school-sidebar-link" :href="route('inventory.qr.generate')" :active="request()->routeIs('inventory.qr.generate')"><span class="school-sidebar-icon">▧</span>{{ __('Generate QR') }}</x-nav-link>
         @endif
@@ -61,7 +63,9 @@
         <div x-show="open" x-cloak class="school-mobile-menu">
             <a href="{{ route('inventory.dashboard') }}">Dashboard</a>
             <a href="{{ route('inventory.items.list') }}">Inventory</a>
-            <a href="{{ route('inventory.issues.list') }}">Requests</a>
+            <a href="{{ route('inventory.consumables.list') }}">Consumables</a>
+            <a href="{{ route('inventory.borrowing.list') }}">Borrowing</a>
+            <a href="{{ route('inventory.issues.list') }}">Material Issuance</a>
             <a href="{{ route('inventory.transactions.list') }}">Transactions</a>
             @if(auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian())<a href="{{ route('inventory.qr.generate') }}">Generate QR</a>@endif
             @if(auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian())<a href="{{ route('inventory.reports.menu') }}">Reports</a>@endif

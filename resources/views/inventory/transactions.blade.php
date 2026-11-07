@@ -6,12 +6,55 @@
         .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
         .card{background:rgba(255,255,255,.9);padding:20px;border:1px solid #d8e5e8;border-radius:12px;box-shadow:0 16px 40px rgba(18,59,93,.08);overflow:hidden}
         #results{width:100%;overflow-x:auto;padding-bottom:4px}
+        .transaction-results table{width:100%;min-width:1380px;margin-top:8px;border:0;border-collapse:collapse;border-spacing:0;border-radius:0;table-layout:auto}
+        .transaction-results th{padding:13px 14px;border:0;border-bottom:1px solid #cfe2e3;background:#e8f4f3;color:#526b7a;font-size:11px;font-weight:700;letter-spacing:.07em;text-align:left;text-transform:uppercase;white-space:nowrap}
+        .transaction-results td{padding:14px;border:0;border-bottom:1px solid #edf1f3;color:#334b5d;font-size:13px;line-height:1.45;vertical-align:middle}
+        .transaction-results tbody tr:nth-child(even){background:#f8fbfb}
+        .transaction-results tbody tr:hover{background:#eff8f7}
+        .transaction-results .transaction-id{width:64px;min-width:64px;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+        .transaction-results .transaction-item{color:#123b5d;font-weight:700}
+        .transaction-results .transaction-quantity{text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+        .transaction-results .transaction-type-cell{min-width:110px;white-space:nowrap}
+        .transaction-results .transaction-type-badge{display:inline-flex;align-items:center;justify-content:center;max-width:100%;padding:5px 9px;border-radius:999px;background:#e2e8f0;color:#334155;font-size:11px;font-weight:700;line-height:1.2;text-transform:capitalize;white-space:nowrap}
+        .transaction-results .transaction-type-badge.type-issue{background:#dbeafe;color:#1d4ed8}
+        .transaction-results .transaction-type-badge.type-borrow{background:#ede9fe;color:#6d28d9}
+        .transaction-results .transaction-type-badge.type-return{background:#dcfce7;color:#15803d}
+        .transaction-results .transaction-type-badge.type-receive{background:#ccfbf1;color:#0f766e}
+        .transaction-results .transaction-type-badge.type-adjustment{background:#fef3c7;color:#92400e}
+        .transaction-results .transaction-date{white-space:nowrap}
+        .transaction-results .transaction-status{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:#edf2f7;color:#475569;font-size:11px;font-weight:700;text-transform:capitalize;white-space:nowrap}
+        .transaction-results .transaction-status.status-approved,.transaction-results .transaction-status.status-completed,.transaction-results .transaction-status.status-returned{background:#dcfce7;color:#166534}
+        .transaction-results .transaction-status.status-pending{background:#fef3c7;color:#92400e}
+        .transaction-results .transaction-status.status-rejected{background:#fee2e2;color:#991b1b}
+        .transaction-results .transaction-actions{min-width:150px}
+        .transaction-results .action-buttons{flex-wrap:nowrap;gap:6px}
+        .transaction-results .action-buttons button{padding:7px 10px;white-space:nowrap;font-size:11px}
+        .transaction-results .action-buttons .return-borrow{background:#16794b}
+        .transaction-results .action-buttons .return-borrow:hover{background:#11633d}
         table{width:100%;min-width:940px;border-collapse:separate;border-spacing:0;margin-top:8px;border:1px solid #d8e5e8;border-radius:12px;overflow:hidden;table-layout:fixed}
         th,td{border:1px solid #d8e5e8;padding:8px 10px;text-align:left;vertical-align:middle;word-break:break-word;overflow-wrap:anywhere;white-space:normal;line-height:1.3}
         th{background:#dcefed;color:#123b5d;font-size:12px;letter-spacing:.02em}
         td{font-size:13px}
         tbody tr{background:rgba(255,255,255,.82);transition:background .2s}
         tbody tr:hover{background:#fff}
+        .borrowing-results table{min-width:1080px;border:0;border-collapse:collapse;border-radius:0;table-layout:auto}
+        .borrowing-results th{padding:13px 14px;border:0;border-bottom:1px solid #cfe2e3;background:#e8f4f3;color:#526b7a;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+        .borrowing-results td{padding:14px;border:0;border-bottom:1px solid #edf1f3;color:#334b5d;font-size:13px;line-height:1.45}
+        .borrowing-results .borrow-id{width:64px;min-width:64px;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+        .borrowing-results tbody tr:nth-child(even){background:#f8fbfb}
+        .borrowing-results tbody tr:hover{background:#eff8f7}
+        .borrowing-results .borrow-item{color:#123b5d;font-weight:700}
+        .borrowing-results .borrow-purpose{min-width:150px;max-width:250px;color:#536879}
+        .borrowing-results .borrow-quantity{text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+        .borrowing-results .borrow-date{white-space:nowrap}
+        .borrowing-results .borrow-status{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:#edf2f7;color:#475569;font-size:11px;font-weight:700;text-transform:capitalize;white-space:nowrap}
+        .borrowing-results .borrow-status.status-approved{background:#dcfce7;color:#166534}
+        .borrowing-results .borrow-status.status-pending{background:#fef3c7;color:#92400e}
+        .borrowing-results .borrow-status.status-rejected{background:#fee2e2;color:#991b1b}
+        .borrowing-results .action-buttons{flex-wrap:nowrap;gap:6px}
+        .borrowing-results .action-buttons button{padding:7px 10px;white-space:nowrap;font-size:11px}
+        .borrowing-results .action-buttons .return-borrow{background:#16794b}
+        .borrowing-results .action-buttons .return-borrow:hover{background:#11633d}
         .muted{color:#536879;font-size:13px}
         .btn{display:inline-block;padding:8px 12px;border-radius:8px;text-decoration:none;color:#fff;background:#123b5d;border:1px solid #123b5d;box-shadow:0 6px 14px rgba(18,59,93,.12);transition:background .2s ease, border-color .2s ease, transform .15s ease}
         .btn:hover{background:#287f92;border-color:#287f92;transform:translateY(-1px)}
@@ -35,15 +78,17 @@
     </style>
 
     <div class="legacy-module-page">
-        <h1>Inventory History & Borrowing Audit</h1>
+        <h1>{{ !empty($borrowingOnly) ? 'Borrowing Transactions' : 'Inventory Transaction History' }}</h1>
         <div class="toolbar">
-            @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
+            @if(!empty($borrowingOnly) && auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isTeacher()))
+                <a id="newTx" class="btn">Request to Borrow</a>
+            @elseif(empty($borrowingOnly) && auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
                 <a id="newTx" class="btn">New Transaction</a>
             @endif
             <div style="flex:1"></div>
             @if(auth()->user() && (auth()->user()->isApprover() || auth()->user()->role==='admin'))
-                <a id="exportCsv" class="btn" href="#">Export CSV</a>
-                <a id="exportPdf" class="btn secondary" href="#">Export PDF</a>
+                <x-export-link id="exportCsv" href="#" type="csv" label="Export transactions as CSV" />
+                <x-export-link id="exportPdf" href="#" type="pdf" label="Export transactions as PDF" />
             @endif
         </div>
 
@@ -52,22 +97,26 @@
                 <label class="muted">Item ID <input id="f_item" type="text" placeholder="item id"></label>
                 <label class="muted">User <input id="f_user" type="text" placeholder="user name"></label>
                 <label class="muted">Department <input id="f_dept" type="text" placeholder="department name"></label>
-                <label class="muted">Type
-                    <select id="f_type">
-                        <option value="">Any</option>
-                        <option value="issue">issue</option>
-                        <option value="receive">receive</option>
-                        <option value="borrow">borrow</option>
-                        <option value="return">return</option>
-                    </select>
-                </label>
+                @if(!empty($borrowingOnly))
+                    <input id="f_type" type="hidden" value="borrow">
+                @else
+                    <label class="muted">Type
+                        <select id="f_type">
+                            <option value="">Any</option>
+                            <option value="issue">issue</option>
+                            <option value="receive">receive</option>
+                            <option value="borrow">borrow</option>
+                            <option value="return">return</option>
+                        </select>
+                    </label>
+                @endif
                 <label class="muted">From <input id="f_from" type="date"></label>
                 <label class="muted">To <input id="f_to" type="date"></label>
                 <button id="applyFilters" class="btn">Apply</button>
                 <button id="clearFilters" class="btn secondary">Clear</button>
             </div>
 
-            <div id="results">Loading...</div>
+            <div id="results" class="transaction-results {{ !empty($borrowingOnly) ? 'borrowing-results' : '' }}">Loading...</div>
         </div>
 
         <div id="detailModal" class="modal" role="dialog" aria-hidden="true">
@@ -124,7 +173,7 @@
         <div id="createModal" class="modal" aria-hidden="true">
             <div class="panel">
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                    <h3>New Transaction</h3>
+                    <h3>{{ !empty($borrowingOnly) ? 'Request to Borrow' : 'New Transaction' }}</h3>
                     <button id="closeCreate" class="btn secondary">Close</button>
                 </div>
                 <form id="createForm" style="margin-top:12px;display:grid;gap:8px">
@@ -132,22 +181,26 @@
                         <select id="c_item_id" name="item_id" required>
                             <option value="">Select item</option>
                             @foreach($items ?? [] as $item)
-                                <option value="{{ $item->id }}" data-category="{{ $item->category }}">{{ $item->name }}</option>
+                                <option value="{{ $item->id }}" data-category="{{ $item->category }}" data-quantity="{{ $item->quantity }}" @if(!empty($borrowingOnly) && $item->quantity <= 0) disabled @endif>{{ $item->name }}@if(!empty($borrowingOnly)) — {{ $item->quantity > 0 ? $item->quantity.' available' : 'Out of stock' }}@endif</option>
                             @endforeach
                         </select>
                     </label>
-                    <label>Type
-                        <select id="c_type" name="transaction_type">
-                            <option value="issue">issue</option>
-                            <option value="receive">receive</option>
-                            <option value="borrow">borrow</option>
-                            <option value="return">return</option>
-                        </select>
-                    </label>
+                    @if(!empty($borrowingOnly))
+                        <input id="c_type" name="transaction_type" type="hidden" value="borrow">
+                    @else
+                        <label>Type
+                            <select id="c_type" name="transaction_type">
+                                <option value="issue">issue</option>
+                                <option value="receive">receive</option>
+                                <option value="return">return</option>
+                            </select>
+                        </label>
+                    @endif
                     <label>Quantity <input id="c_quantity" name="quantity" type="number" min="1" value="1" required></label>
                     <label id="createPurposeField">Purpose <input id="c_purpose" name="purpose" placeholder="Specify the reason for borrowing"></label>
                     <label id="createRequestedAtField"><span id="createRequestedAtLabel">Date borrowed</span> <input id="c_requested_for_at" name="requested_for_at" type="datetime-local"></label>
                     <label id="createExpectedReturnField"><span id="createExpectedReturnLabel">Expected Return</span> <input id="c_expected_return_at" name="expected_return_at" type="date"></label>
+                    @if(empty($borrowingOnly))
                     <label>User
                         <select id="c_user_id" name="user_id">
                             <option value="">Select user</option>
@@ -156,6 +209,9 @@
                             @endforeach
                         </select>
                     </label>
+                    @else
+                        <input id="c_user_id" type="hidden" value="{{ auth()->id() }}">
+                    @endif
                     <label>Department
                         <select id="c_department_id" name="department_id">
                             <option value="">Select department</option>
@@ -183,6 +239,7 @@
         const createModal = document.getElementById('createModal');
         const createForm = document.getElementById('createForm');
         const createType = document.getElementById('c_type');
+        const borrowingOnly = @json(!empty($borrowingOnly));
         const createPurpose = document.getElementById('c_purpose');
         const requestedAt = document.getElementById('c_requested_for_at');
         const expectedReturn = document.getElementById('c_expected_return_at');
@@ -245,7 +302,7 @@
                 item_id: document.getElementById('f_item').value,
                 user_id: document.getElementById('f_user').value,
                 department_id: document.getElementById('f_dept').value,
-                transaction_type: document.getElementById('f_type').value,
+                transaction_type: borrowingOnly ? 'borrow' : document.getElementById('f_type').value,
                 date_from: document.getElementById('f_from').value,
                 date_to: document.getElementById('f_to').value,
             };
@@ -257,14 +314,17 @@
             const list = data.data || data;
             if(!list || list.length===0){ resultsEl.innerHTML = '<div class="muted">No transactions found.</div>'; return; }
 
-            let html = '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Issue / borrow date</th><th>Expected return</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
+            let html = borrowingOnly
+                ? '<table class="borrowing-table" aria-label="Borrowing transactions"><thead><tr><th class="borrow-id">ID</th><th>Item</th><th>Borrower</th><th>Qty</th><th>Purpose</th><th>Department</th><th>Borrow date</th><th>Expected return</th><th>Status</th>'
+                : '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Issue / borrow date</th><th>Expected return</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
             const canEdit = @json(auth()->user()?->isTeacher() ?? false);
             const canManage = @json(auth()->user()?->isAdmin() || auth()->user()?->isPropertyCustodian());
             if(canEdit || canManage) html += '<th>Actions</th>';
             html += '</tr></thead><tbody>';
             list.forEach(t=>{
                 const type = (t.transaction_type||'').toLowerCase();
-                const typeLabel = type === 'adjustment' ? `<span style="background:#f59e0b;color:#fff;padding:4px 6px;border-radius:4px">Adjustment</span>` : `<span style="background:#0b61d8;color:#fff;padding:4px 6px;border-radius:4px">${escapeHtml(t.transaction_type)}</span>`;
+                const typeClass = type.replace(/[^a-z0-9_-]/g, '');
+                const typeLabel = `<span class="transaction-type-badge type-${typeClass}">${escapeHtml(t.transaction_type || 'N/A')}</span>`;
                 const department = t.department && t.department.name ? t.department.name : (t.department_id ? 'Department '+t.department_id : '');
                 const requestedFor = t.requested_for_at
                     ? formatManilaDateTime(t.requested_for_at, type !== 'issue')
@@ -280,8 +340,14 @@
                     actions += `<button class="return-borrow" data-id="${t.id}" data-item-id="${t.item_id}" data-user-id="${t.user_id}" data-quantity="${t.quantity}">Mark as returned</button>`;
                 }
                 const notes = t.status === 'rejected' && t.rejection_reason ? `${t.notes || ''} | Rejection: ${t.rejection_reason}` : (t.notes || '');
-                html += `<tr class="link-row" data-id="${t.id}"><td>${t.id}</td><td>${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td>${typeLabel}</td><td>${t.quantity}</td><td>${escapeHtml(department)}</td><td>${escapeHtml(requestedFor)}</td><td>${escapeHtml(expectedReturnDate)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td>${statusCell}</td><td>${escapeHtml(notes)}</td><td>${escapeHtml(formatManilaDateTime(t.created_at))}`;
-                if(canEdit || canManage){ html += `<td><div class="action-buttons">${actions}</div></td>`; }
+                if(borrowingOnly){
+                    const statusClass = `status-${String(t.status || '').toLowerCase().replace(/[^a-z0-9_-]/g, '')}`;
+                    html += `<tr class="link-row" data-id="${t.id}"><td class="borrow-id">${t.id}</td><td class="borrow-item">${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td class="borrow-quantity">${t.quantity}</td><td class="borrow-purpose">${escapeHtml(notes || '—')}</td><td>${escapeHtml(department || '—')}</td><td class="borrow-date">${escapeHtml(requestedFor)}</td><td class="borrow-date">${escapeHtml(expectedReturnDate)}</td><td><span class="borrow-status ${statusClass}">${statusCell}</span></td>`;
+                } else {
+                    const statusClass = `status-${String(t.status || '').toLowerCase().replace(/[^a-z0-9_-]/g, '')}`;
+                    html += `<tr class="link-row" data-id="${t.id}"><td class="transaction-id">${t.id}</td><td class="transaction-item">${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td class="transaction-type-cell">${typeLabel}</td><td class="transaction-quantity">${t.quantity}</td><td>${escapeHtml(department)}</td><td class="transaction-date">${escapeHtml(requestedFor)}</td><td class="transaction-date">${escapeHtml(expectedReturnDate)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td><span class="transaction-status ${statusClass}">${statusCell}</span></td><td>${escapeHtml(notes)}</td><td class="transaction-date">${escapeHtml(formatManilaDateTime(t.created_at))}`;
+                }
+                if(canEdit || canManage){ html += `<td class="${borrowingOnly ? '' : 'transaction-actions'}"><div class="action-buttons">${actions}</div></td>`; }
                 html += `</tr>`;
             });
             html += '</tbody></table>';
@@ -525,7 +591,7 @@
 
             if(res.status === 201){
                 const json = await res.json();
-                document.getElementById('createMessage').textContent = 'Transaction created.';
+                document.getElementById('createMessage').textContent = borrowingOnly ? 'Borrow request submitted for approval.' : 'Transaction created.';
                 createModal.style.display = 'none';
                 load();
                 showDetail(json.id);

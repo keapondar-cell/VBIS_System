@@ -5,10 +5,6 @@
     .reports-shell { border: 1px solid #d8e5e8; border-top: 4px solid #2f9a91; box-shadow: 0 16px 40px rgba(18,59,93,.08); }
     .reports-heading { color: #123b5d !important; }
     .reports-description { color: #536879 !important; }
-    .report-export-pdf { background: #d32f2f !important; }
-    .report-export-pdf:hover { background: #b71c1c !important; }
-    .report-export-excel { background: #217346 !important; }
-    .report-export-excel:hover { background: #185c37 !important; }
 </style>
 
 <x-app-layout>
@@ -27,10 +23,10 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div class="md:col-span-2 lg:col-span-3 flex flex-wrap gap-2">
-                        <a href="{{ route('inventory.reports.export', ['type' => 'departments', 'format' => 'pdf']) }}" class="report-export-pdf px-4 py-2 bg-blue-700 text-white rounded-md">Department PDF</a>
-                        <a href="{{ route('inventory.reports.export', ['type' => 'departments', 'format' => 'excel']) }}" class="report-export-excel px-4 py-2 bg-green-700 text-white rounded-md">Department Excel</a>
-                        <a href="{{ route('inventory.reports.export', ['type' => 'transactions', 'format' => 'pdf']) }}" class="report-export-pdf px-4 py-2 bg-blue-700 text-white rounded-md">Transactions PDF</a>
-                        <a href="{{ route('inventory.reports.export', ['type' => 'transactions', 'format' => 'excel']) }}" class="report-export-excel px-4 py-2 bg-green-700 text-white rounded-md">Transactions Excel</a>
+                        <x-export-link href="{{ route('inventory.reports.export', ['type' => 'departments', 'format' => 'pdf']) }}" type="pdf" label="Export departments as PDF" />
+                        <x-export-link href="{{ route('inventory.reports.export', ['type' => 'departments', 'format' => 'excel']) }}" type="excel" label="Export departments as Excel" />
+                        <x-export-link href="{{ route('inventory.reports.export', ['type' => 'transactions', 'format' => 'pdf']) }}" type="pdf" label="Export transactions as PDF" />
+                        <x-export-link href="{{ route('inventory.reports.export', ['type' => 'transactions', 'format' => 'excel']) }}" type="excel" label="Export transactions as Excel" />
                     </div>
                     <!-- Inventory Report -->
                     <a href="{{ route('inventory.reports') }}" class="block p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg hover:shadow-lg hover:border-blue-400 transition-all">

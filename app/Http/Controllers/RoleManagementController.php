@@ -16,13 +16,29 @@ class RoleManagementController extends Controller
             abort(403);
         }
 
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'role' => ['nullable', 'in:admin,property_custodian,teacher,user'],
+            'status' => ['nullable', 'in:active,pending'],
+        ]);
+
         $query = User::query();
-        if ($search = $request->input('search')) {
-            $query->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        if (!empty($filters['role'])) {
+            $query->where('role', $filters['role']);
+        }
+        if (!empty($filters['status'])) {
+            $query->where('is_active', $filters['status'] === 'active');
         }
 
         $users = $query->orderBy('id')->paginate(50)->withQueryString();
-        return view('admin.users', ['users' => $users, 'search' => $search ?? '']);
+        return view('admin.users', ['users' => $users, 'filters' => $filters]);
     }
 
     public function editView(Request $request, $id)

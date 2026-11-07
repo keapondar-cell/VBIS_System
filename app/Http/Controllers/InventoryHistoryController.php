@@ -219,11 +219,20 @@ class InventoryHistoryController extends Controller
             $type = strtolower($data['transaction_type']);
 
             if ($type === 'borrow') {
-                $transaction = InventoryTransaction::create(array_merge($data, [
-                    'performed_by' => $request->user()?->id,
-                    'affected_user_id' => $data['user_id'],
-                    'reason' => 'Borrow request',
-                ]));
+                $transaction = app(InventoryService::class)->borrow(
+                    (int) $data['item_id'],
+                    (int) $data['quantity'],
+                    [
+                        'user_id' => $data['user_id'],
+                        'department_id' => $data['department_id'] ?? null,
+                        'requested_for_at' => $data['requested_for_at'] ?? null,
+                        'expected_return_at' => $data['expected_return_at'] ?? null,
+                        'notes' => $data['notes'] ?? null,
+                        'performed_by' => $request->user()?->id,
+                        'affected_user_id' => $data['user_id'],
+                        'reason' => 'Borrow request',
+                    ]
+                );
                 $transaction->load('item');
                 User::whereIn('role', ['admin', 'property_custodian'])->get()
                     ->each(fn ($manager) => $manager->notify(new InventoryTransactionNotification($transaction, 'borrow_requested')));
@@ -336,10 +345,21 @@ class InventoryHistoryController extends Controller
     // UI view for transactions list
     public function transactionsView()
     {
+        return $this->renderTransactionsView(false);
+    }
+
+    public function borrowingView()
+    {
+        return $this->renderTransactionsView(true);
+    }
+
+    private function renderTransactionsView(bool $borrowingOnly)
+    {
         return view('inventory.transactions', [
-            'items' => Item::orderBy('name')->get(['id', 'name', 'category']),
+            'items' => Item::orderBy('name')->get(['id', 'name', 'category', 'quantity']),
             'users' => User::orderBy('name')->get(),
             'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+            'borrowingOnly' => $borrowingOnly,
         ]);
     }
 

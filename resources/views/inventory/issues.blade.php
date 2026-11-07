@@ -22,11 +22,11 @@
             <div>
                 <div class="eyebrow">VBIS Requests</div>
                 <h1>Material Issues</h1>
-                <p class="page-subtitle">Track requests, approvals, and issued materials.</p>
+                <p class="page-subtitle">Submit and track material issuance requests and approvals.</p>
             </div>
         </header>
 
-        @if(auth()->check() && (auth()->user()->isTeacher() || auth()->user()->isAdmin()))
+        @if(auth()->check() && (auth()->user()->isTeacher() || auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
             <div class="surface">
                 <h3>Request Material</h3>
                 <form id="createIssueForm" class="form-grid" style="position:relative">
@@ -34,10 +34,6 @@
                     <input type="hidden" id="ci_item" name="item_id">
                     <div id="ci_suggestions" style="position:absolute;left:8px;top:62px;background:#fff;border:1px solid #ddd;max-height:220px;overflow:auto;display:none;z-index:60;width:360px;border-radius:4px"></div>
                     <input id="ci_qty" type="number" min="1" value="1" style="width:80px;padding:6px">
-                    <select id="ci_request_type" style="width:150px;padding:6px">
-                        <option value="issue">Material Issue</option>
-                        <option value="borrow">Borrow</option>
-                    </select>
                     <input id="ci_purpose" type="text" placeholder="Purpose / reason for request" required style="min-width:260px;padding:6px">
                     <div>
                         <label for="ci_requested_for_at" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">Requested date &amp; time</label>
@@ -47,7 +43,19 @@
                         <label for="ci_return_date" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">Expected Return Date</label>
                         <input id="ci_return_date" type="date" style="width:170px;padding:6px" aria-label="Return date">
                     </div>
-                    <input id="ci_user" type="text" placeholder="User ID or name" style="width:160px;padding:6px">
+                    <div>
+                        <label for="ci_user" style="display:block;font-size:12px;font-weight:700;color:#17324d;margin-bottom:4px;">{{ auth()->user()->isPropertyCustodian() ? 'Issue to user' : 'Requested by' }}</label>
+                        <select id="ci_user" style="width:240px;padding:6px" required>
+                            @if(auth()->user()->isPropertyCustodian())
+                                <option value="">Select user</option>
+                                @foreach($users ?? [] as $user)
+                                    <option value="{{ $user->id }}">#{{ $user->id }} — {{ $user->name }}{{ $user->email ? ' ('.$user->email.')' : '' }}</option>
+                                @endforeach
+                            @else
+                                <option value="{{ auth()->id() }}" selected>#{{ auth()->id() }} — {{ auth()->user()->name }}</option>
+                            @endif
+                        </select>
+                    </div>
                     <select id="ci_dept" style="width:180px;padding:6px">
                         <option value="">Select department</option>
                         @foreach($departments ?? [] as $department)
@@ -60,7 +68,7 @@
             </div>
         @else
             <div class="surface">
-                <p class="page-subtitle" style="margin:0;">Only teachers and admins can request or borrow items.</p>
+                <p class="page-subtitle" style="margin:0;">Only teachers, admins, and property custodians can request material issuance.</p>
             </div>
         @endif
 
@@ -85,6 +93,30 @@
                     <button type="button" class="btn secondary" onclick="closeEditIssue()">Cancel</button>
                 </div>
                 <div id="editIssueMsg" class="page-subtitle"></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="transferIssueModal" class="modal">
+        <div class="modal-box">
+            <h3>Transfer Issued Item</h3>
+            <p class="page-subtitle">Choose the new user responsible for this issued item. Inventory stock will not change.</p>
+            <form id="transferIssueForm" class="edit-form">
+                <input type="hidden" id="transfer_issue_id">
+                <label>Transfer to
+                    <select id="transfer_new_user_id" required>
+                        <option value="">Select new user</option>
+                        @foreach($users ?? [] as $user)
+                            <option value="{{ $user->id }}">{{ $user->name }}{{ $user->email ? ' — '.$user->email : '' }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>Notes (optional)<input id="transfer_notes" type="text" maxlength="500" placeholder="Reason for transfer"></label>
+                <div class="actions">
+                    <button type="submit" class="btn">Transfer item</button>
+                    <button type="button" class="btn secondary" onclick="closeTransferIssue()">Cancel</button>
+                </div>
+                <div id="transferIssueMsg" class="page-subtitle" role="status"></div>
             </form>
         </div>
     </div>
@@ -142,6 +174,9 @@
                 if(i.status==='pending'){
                     if(canApprove){ html += ` <button class="btn" onclick="approveIssue(${i.id})">Approve</button> <button class="btn danger" onclick="rejectIssue(${i.id})">Reject</button>`; }
                 }
+                if(i.status === 'approved' && canApprove){
+                    html += ` <button class="btn warning transfer-issue-button" data-id="${i.id}" data-user-id="${i.issued_to_user_id || ''}">Transfer to:</button>`;
+                }
                 html += `</td></tr>`;
             });
             html += '</tbody></table>';
@@ -158,6 +193,11 @@
         }
         load();
         document.getElementById('content').addEventListener('click', (event)=>{
+            const transferButton = event.target.closest('.transfer-issue-button');
+            if(transferButton){
+                openTransferIssue(transferButton.dataset.id, transferButton.dataset.userId);
+                return;
+            }
             const button = event.target.closest('.edit-issue-button');
             if(!button) return;
             openEditIssue(button.dataset.id, button.dataset.itemId, button.dataset.quantity, button.dataset.purpose, button.dataset.departmentId, button.dataset.requestedForAt, button.dataset.expectedReturnAt);
@@ -165,6 +205,42 @@
     </script>
 
     <script>
+        function openTransferIssue(issueId, currentUserId){
+            document.getElementById('transfer_issue_id').value = issueId;
+            document.getElementById('transfer_new_user_id').value = '';
+            document.getElementById('transfer_notes').value = '';
+            document.getElementById('transferIssueMsg').textContent = '';
+            Array.from(document.getElementById('transfer_new_user_id').options).forEach(option => {
+                option.disabled = option.value !== '' && option.value === String(currentUserId);
+            });
+            document.getElementById('transferIssueModal').style.display = 'flex';
+        }
+
+        function closeTransferIssue(){
+            document.getElementById('transferIssueModal').style.display = 'none';
+        }
+
+        document.getElementById('transferIssueForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            const message = document.getElementById('transferIssueMsg');
+            const issueId = document.getElementById('transfer_issue_id').value;
+            const response = await fetch(`/inventory/issues/${issueId}/transfer`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf},
+                body: JSON.stringify({
+                    new_user_id: document.getElementById('transfer_new_user_id').value,
+                    notes: document.getElementById('transfer_notes').value || null,
+                }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if(!response.ok){
+                message.textContent = Object.values(result.errors || {}).flat().join(' ') || result.error || result.message || 'Unable to transfer this item.';
+                return;
+            }
+            closeTransferIssue();
+            load();
+        });
+
         function debounce(fn, wait){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
 
         async function searchItems(q){
@@ -177,26 +253,22 @@
         const sugBox = document.getElementById('ci_suggestions');
         const searchInput = document.getElementById('ci_item_search');
         let selectedItemClassification = '';
-        const requestTypeSelect = document.getElementById('ci_request_type');
         const returnDateGroup = document.getElementById('ci_return_date_group');
         const returnDateInput = document.getElementById('ci_return_date');
         const requestedForInput = document.getElementById('ci_requested_for_at');
         const createIssueForm = document.getElementById('createIssueForm');
+        let selectedItemQuantity = null;
 
         function updateExpectedReturnVisibility(){
-            if (!returnDateGroup || !requestTypeSelect) return;
-            const isConsumableIssue = requestTypeSelect.value === 'issue'
-                && selectedItemClassification.trim().toLowerCase() === 'consumable';
+            if (!returnDateGroup) return;
+            const isConsumableIssue = selectedItemClassification.trim().toLowerCase() === 'consumable';
             returnDateGroup.style.display = isConsumableIssue ? 'none' : 'block';
             if (isConsumableIssue && returnDateInput) {
                 returnDateInput.value = '';
             }
         }
 
-        if (requestTypeSelect) {
-            requestTypeSelect.addEventListener('change', updateExpectedReturnVisibility);
-            updateExpectedReturnVisibility();
-        }
+        updateExpectedReturnVisibility();
 
         function setRequestedForDefault(input){
             input.value = toManilaDateTimeLocal();
@@ -207,12 +279,12 @@
             async function renderSuggestions(q){
                 const items = await searchItems(q);
                 if(!items || items.length===0){ sugBox.style.display='none'; sugBox.innerHTML=''; return; }
-                sugBox.innerHTML = items.map(it=>`<div data-id="${it.id}" data-category="${escapeHtml(it.category || '')}" style="padding:8px;border-bottom:1px solid #f0f0f0;cursor:pointer">${escapeHtml(it.name)} <span style="color:#666;font-size:12px">(${escapeHtml(it.sku||'')})</span> <span style="float:right;color:#0b61d8">${it.quantity}</span></div>`).join('');
+                sugBox.innerHTML = items.map(it=>`<div data-id="${it.id}" data-category="${escapeHtml(it.category || '')}" data-quantity="${Number(it.quantity) || 0}" style="padding:8px;border-bottom:1px solid #f0f0f0;cursor:${Number(it.quantity) > 0 ? 'pointer' : 'not-allowed'};${Number(it.quantity) > 0 ? '' : 'opacity:.6'}">${escapeHtml(it.name)} <span style="color:#666;font-size:12px">(${escapeHtml(it.sku||'')})</span> <span style="float:right;color:${Number(it.quantity) > 0 ? '#0b61d8' : '#b91c1c'}">${Number(it.quantity) > 0 ? `Available: ${Number(it.quantity)}` : 'Out of stock'}</span></div>`).join('');
                 sugBox.style.display='block';
-                Array.from(sugBox.children).forEach(ch=>{ ch.addEventListener('click', ()=>{ document.getElementById('ci_item').value = ch.getAttribute('data-id'); searchInput.value = ch.textContent.trim(); selectedItemClassification = ch.dataset.category || ''; sugBox.style.display='none'; updateExpectedReturnVisibility(); }); });
+                Array.from(sugBox.children).forEach(ch=>{ ch.addEventListener('click', ()=>{ selectedItemQuantity = Number(ch.dataset.quantity) || 0; if(selectedItemQuantity <= 0){ document.getElementById('createMsg').textContent='This item is out of stock and cannot be requested.'; return; } document.getElementById('ci_item').value = ch.getAttribute('data-id'); searchInput.value = ch.textContent.trim(); selectedItemClassification = ch.dataset.category || ''; sugBox.style.display='none'; document.getElementById('createMsg').textContent=''; updateExpectedReturnVisibility(); }); });
             }
 
-            searchInput.addEventListener('input', debounce((e)=>{ const v=e.target.value; document.getElementById('ci_item').value=''; selectedItemClassification = ''; updateExpectedReturnVisibility(); renderSuggestions(v); }, 250));
+            searchInput.addEventListener('input', debounce((e)=>{ const v=e.target.value; document.getElementById('ci_item').value=''; selectedItemQuantity = null; selectedItemClassification = ''; updateExpectedReturnVisibility(); renderSuggestions(v); }, 250));
             document.addEventListener('click', (ev)=>{ if(!ev.target.closest('#ci_suggestions') && ev.target !== searchInput) sugBox.style.display='none'; });
         }
 
@@ -222,19 +294,16 @@
                 const deptVal = document.getElementById('ci_dept').value || '';
                 const deptId = deptVal === '' ? null : (isNaN(Number(deptVal)) ? null : Number(deptVal));
                 const purpose = (document.getElementById('ci_purpose').value || '').trim();
-                const requestType = document.getElementById('ci_request_type').value || 'issue';
                 const itemId = Number(document.getElementById('ci_item').value || 0);
                 const requestedForAt = requestedForInput.value || null;
-                const isConsumableIssue = requestType === 'issue'
-                    && selectedItemClassification.trim().toLowerCase() === 'consumable';
+                const isConsumableIssue = selectedItemClassification.trim().toLowerCase() === 'consumable';
                 const returnDate = isConsumableIssue ? null : (document.getElementById('ci_return_date').value || null);
 
                 if(!itemId){ document.getElementById('createMsg').textContent='Please select an item from suggestions.'; return; }
+                if(selectedItemQuantity !== null && selectedItemQuantity <= 0){ document.getElementById('createMsg').textContent='This item is out of stock and cannot be requested.'; return; }
                 if(!purpose){ document.getElementById('createMsg').textContent='Please specify the purpose for this request.'; return; }
                 if(!deptId){ document.getElementById('createMsg').textContent='Please select your department.'; return; }
                 if(!requestedForAt){ document.getElementById('createMsg').textContent='Please choose the requested date and time.'; return; }
-                if(requestType === 'borrow' && !returnDate){ document.getElementById('createMsg').textContent='Please choose the date to be returned.'; return; }
-
                 const payload = {
                     item_id: itemId,
                     quantity: Number(document.getElementById('ci_qty').value || 1),
@@ -245,42 +314,25 @@
                     issued_to_user_id: document.getElementById('ci_user').value || null,
                 };
 
-                let endpoint = '/inventory/issues';
-                let method = 'POST';
-                let successText = 'Request created.';
-
-                if (requestType === 'borrow') {
-                    endpoint = '/inventory/transactions';
-                    method = 'POST';
-                    Object.assign(payload, {
-                        transaction_type: 'borrow',
-                        user_id: currentUserId,
-                        notes: purpose,
-                        requested_for_at: requestedForAt,
-                        expected_return_at: returnDate,
-                    });
-                    delete payload.issued_to_user_id;
-                    successText = 'Borrow recorded successfully.';
-                }
-
-                const res = await fetch(endpoint, {
-                    method,
+                const res = await fetch('/inventory/issues', {
+                    method: 'POST',
                     headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN': csrf},
                     body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
                     const j = await res.json().catch(()=>null);
-                    document.getElementById('createMsg').textContent = requestType === 'borrow' ? successText : (j && j.over_requested ? 'Requested, but exceeds available stock.' : successText);
+                    document.getElementById('createMsg').textContent = j && j.over_requested ? 'Requested, but exceeds available stock.' : 'Material issuance request created.';
                     document.getElementById('createIssueForm').reset();
                     setRequestedForDefault(requestedForInput);
                     selectedItemClassification = '';
+                    selectedItemQuantity = null;
                     updateExpectedReturnVisibility();
                     load();
                 } else {
-                    let text = '';
-                    try { text = await res.text(); } catch (e) { text = 'Unable to read response'; }
-                    document.getElementById('createMsg').textContent = `Create failed (${res.status}): ${text}`;
+                    const result = await res.json().catch(()=>({}));
+                    const message = Object.values(result.errors || {}).flat().join(' ') || result.error || result.message || 'Unable to create request.';
+                    document.getElementById('createMsg').textContent = `Create failed (${res.status}): ${message}`;
                 }
             });
         }

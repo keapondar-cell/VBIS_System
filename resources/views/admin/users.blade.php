@@ -19,8 +19,11 @@
         .btn.danger:hover{background:#c82333}
         .btn.success{background:#28a745}
         .btn.success:hover{background:#218838}
-        .search-form{margin-bottom:20px;display:flex;gap:8px;padding:12px;background:rgba(255,255,255,.9);border:1px solid #d8e5e8;border-radius:12px;box-shadow:0 10px 24px rgba(18,59,93,.06)}
-        .search-form input{flex:1;padding:8px 12px;border:1px solid #cbdde1;border-radius:7px}
+        .search-form{margin-bottom:20px;padding:12px;background:rgba(255,255,255,.9);border:1px solid #d8e5e8;border-radius:12px;box-shadow:0 10px 24px rgba(18,59,93,.06)}
+        .filter-controls{display:flex;gap:8px;align-items:center}
+        .filter-controls input,.filter-controls select{min-width:0;padding:8px 12px;border:1px solid #cbdde1;border-radius:7px;background:#fff}
+        .filter-controls input{flex:1}
+        @media(max-width:640px){.header{align-items:flex-start;gap:16px;flex-direction:column}.filter-controls{align-items:stretch;flex-direction:column}.filter-controls input,.filter-controls select,.filter-controls .btn{width:100%;box-sizing:border-box}}
         .table-wrapper{background:rgba(255,255,255,.9);border:1px solid #d8e5e8;border-radius:12px;box-shadow:0 16px 40px rgba(18,59,93,.08);overflow:hidden}
         table{width:100%;border-collapse:collapse}
         th{background:#dcefed;padding:12px;text-align:left;border-bottom:2px solid #c4dfe0;font-weight:600;color:#123b5d}
@@ -53,8 +56,8 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
                 <a href="{{ route('inventory.dashboard') }}" class="btn secondary">Back to Dashboard</a>
                 <a href="{{ route('register') }}" class="btn">Create New User</a>
-                <a href="{{ route('admin.users.export') }}" class="btn secondary">Export CSV</a>
-                <a href="{{ route('admin.users.export', ['format' => 'pdf']) }}" class="btn secondary">Export PDF</a>
+                <x-export-link href="{{ route('admin.users.export') }}" type="csv" label="Export users as CSV" />
+                <x-export-link href="{{ route('admin.users.export', ['format' => 'pdf']) }}" type="pdf" label="Export users as PDF" />
             </div>
         </div>
 
@@ -63,8 +66,20 @@
         @endif
 
         <div class="search-form">
-            <form method="GET" action="{{ route('admin.users') }}" style="display:flex;gap:8px;width:100%">
-                <input type="text" name="search" placeholder="Search by name or email..." value="{{ $search ?? '' }}" style="flex:1">
+            <form method="GET" action="{{ route('admin.users') }}" class="filter-controls">
+                <input type="text" name="search" placeholder="Search by name or email..." value="{{ $filters['search'] ?? '' }}" aria-label="Search users by name or email">
+                <select name="role" aria-label="Filter by role">
+                    <option value="">All roles</option>
+                    <option value="admin" {{ ($filters['role'] ?? '') === 'admin' ? 'selected' : '' }}>Administrator</option>
+                    <option value="property_custodian" {{ ($filters['role'] ?? '') === 'property_custodian' ? 'selected' : '' }}>Property Custodian</option>
+                    <option value="teacher" {{ ($filters['role'] ?? '') === 'teacher' ? 'selected' : '' }}>Teacher</option>
+                    <option value="user" {{ ($filters['role'] ?? '') === 'user' ? 'selected' : '' }}>User</option>
+                </select>
+                <select name="status" aria-label="Filter by account status">
+                    <option value="">All statuses</option>
+                    <option value="active" {{ ($filters['status'] ?? '') === 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="pending" {{ ($filters['status'] ?? '') === 'pending' ? 'selected' : '' }}>Pending approval</option>
+                </select>
                 <button type="submit" class="btn">Search</button>
                 <a href="{{ route('admin.users') }}" class="btn secondary">Reset</a>
             </form>

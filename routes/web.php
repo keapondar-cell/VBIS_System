@@ -48,6 +48,7 @@ Route::prefix('inventory')->middleware('auth')->name('inventory.')->group(functi
     // Inventory history / transactions
     Route::get('transactions', [InventoryHistoryController::class, 'index'])->name('transactions.index');
     Route::get('transactions/list', [InventoryHistoryController::class, 'transactionsView'])->name('transactions.list');
+    Route::get('borrowing/list', [InventoryHistoryController::class, 'borrowingView'])->name('borrowing.list');
     Route::get('transactions/{id}/memorandum-receipt', [InventoryHistoryController::class, 'memorandumReceipt'])->whereNumber('id')->name('transactions.receipt');
     Route::get('transactions/{id}', [InventoryHistoryController::class, 'show'])->whereNumber('id')->name('transactions.show');
     Route::post('transactions', [InventoryHistoryController::class, 'store'])->name('transactions.store');
@@ -64,6 +65,7 @@ Route::prefix('inventory')->middleware('auth')->name('inventory.')->group(functi
     Route::post('issues', [MaterialIssuanceController::class, 'store'])->name('issues.store');
     Route::post('issues/{id}/approve', [MaterialIssuanceController::class, 'approve'])->name('issues.approve');
     Route::post('issues/{id}/reject', [MaterialIssuanceController::class, 'reject'])->name('issues.reject');
+    Route::post('issues/{id}/transfer', [MaterialIssuanceController::class, 'transfer'])->name('issues.transfer');
     Route::patch('issues/{id}', [MaterialIssuanceController::class, 'update'])->name('issues.update');
     Route::put('issues/{id}', [MaterialIssuanceController::class, 'update'])->name('issues.update.put');
     Route::delete('issues/{id}', [MaterialIssuanceController::class, 'destroy'])->name('issues.destroy');
@@ -74,6 +76,7 @@ Route::prefix('inventory')->middleware('auth')->name('inventory.')->group(functi
     Route::put('items/{id}', [InventoryMonitoringController::class, 'update'])->name('items.update');
     Route::delete('items/{id}', [InventoryMonitoringController::class, 'destroy'])->name('items.destroy');
     Route::get('items/list', [InventoryMonitoringController::class, 'itemsView'])->name('items.list');
+    Route::get('consumables', [InventoryMonitoringController::class, 'consumablesView'])->name('consumables.list');
     Route::get('items/export', [InventoryMonitoringController::class, 'exportItems'])->name('items.export');
     Route::get('items/search', [InventoryMonitoringController::class, 'search'])->name('items.search');
     Route::get('items/{id}', [InventoryMonitoringController::class, 'show'])->name('items.show');

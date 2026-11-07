@@ -4,30 +4,48 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Inventory Items</title>
+    <title>{{ !empty($consumablesOnly) ? 'Consumables Inventory' : 'Inventory Items' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body { margin: 0; font-family: Arial, sans-serif; }
         .legacy-module-page { background: radial-gradient(circle at 100% 0, rgba(47,154,145,.12), transparent 28rem), linear-gradient(135deg, #f4f8f8 0%, #e8f1f2 100%); }
-        .legacy-module-page > h1 { position: relative; display: inline-block; margin-bottom: 1.25rem; letter-spacing: .01em; }
+        .legacy-module-page > h1 { position: relative; display: inline-block; margin-bottom: 1.25rem; letter-spacing: .01em; font-weight: 400; }
         .legacy-module-page > h1::after { content: ""; display: block; width: 3.5rem; height: 4px; margin-top: .45rem; border-radius: 4px; background: #d99b2b; }
         .legacy-module-page > a { display: inline-block; margin-bottom: 1rem; padding: .45rem .75rem; border-radius: 7px; color: #287f92; background: rgba(255,255,255,.7); text-decoration: none; transition: background .2s, color .2s; }
         .legacy-module-page > a:hover { color: #123b5d; background: #fff; }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; }
-        th, td { border: 1px solid #d8e5e8; padding: 10px 12px; }
-        th { background: #dcefed; }
-        tbody tr { background: rgba(255,255,255,.82); transition: background .2s; }
-        tbody tr:hover { background: #fff; }
-        .qr-btn { background: #0d67d8; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
-        .qr-btn:hover { background: #0958bb; }
+        .items-table-wrap { overflow-x:auto; border:1px solid #d8e5e8; border-radius:14px; background:rgba(255,255,255,.9); box-shadow:0 16px 40px rgba(18,59,93,.08); }
+        table.items-table { width:100%; min-width:1050px; border:0; border-collapse:collapse; border-spacing:0; }
+        .items-table th { padding:13px 14px; border:0; border-bottom:1px solid #cfe2e3; background:#e8f4f3; color:#526b7a; font-size:11px; font-weight:700; letter-spacing:.07em; text-align:left; text-transform:uppercase; white-space:nowrap; }
+        .items-table td { padding:14px; border:0; border-bottom:1px solid #edf1f3; color:#334b5d; font-size:13px; line-height:1.45; vertical-align:middle; }
+        .items-table tbody tr { background:rgba(255,255,255,.82); transition:background .2s; }
+        .items-table tbody tr:nth-child(even) { background:#f8fbfb; }
+        .items-table tbody tr:hover { background:#eff8f7; }
+        .items-table tbody tr:last-child td { border-bottom:0; }
+        .items-table td:first-child { color:#123b5d; font-weight:700; }
+        .items-table td:nth-child(3) { text-align:center; font-variant-numeric:tabular-nums; }
+        .items-table td:nth-child(7),.items-table td:nth-child(8) { white-space:nowrap; }
+        .item-actions { display:flex; align-items:center; gap:6px; }
+        .item-action-btn { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; padding:0; border:0; border-radius:50%; color:#fff; cursor:pointer; box-shadow:0 3px 8px rgba(18,59,93,.16); transition:transform .15s,background .15s; }
+        .item-action-btn:hover { transform:translateY(-1px); }
+        .item-action-btn:focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
+        .item-action-btn svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+        .qr-btn { width:72px; border-radius:12px; background:#2563eb; }
+        .qr-btn:hover { background:#1d4ed8; }
+        .edit-item-btn { background:#2563eb !important; }
+        .edit-item-btn:hover { background:#1d4ed8 !important; }
+        .delete-item-btn { background:#dc2626 !important; }
+        .delete-item-btn:hover { background:#b91c1c !important; }
         .legacy-module-page>button,.legacy-module-page td:last-child button { background:#0d67d8 !important; color:#fff !important; font-size:.82rem; line-height:1.2; white-space:nowrap; padding:8px 10px; }
         .legacy-module-page>button:hover,.legacy-module-page td:last-child button:hover { background:#0958bb !important; }
-        .legacy-module-page td button.qr-btn { background:#0d67d8 !important; color:#fff !important; }
-        .legacy-module-page td button.qr-btn:hover { background:#0958bb !important; }
+        .legacy-module-page td button.qr-btn { background:#2563eb !important; color:#fff !important; }
+        .legacy-module-page td button.qr-btn:hover { background:#1d4ed8 !important; }
+        .legacy-module-page td button.item-action-btn.qr-btn { width:72px; height:36px; padding:0; border-radius:12px; }
+        .legacy-module-page td:last-child button.item-action-btn { width:36px; height:36px; padding:0; border-radius:50%; }
+        .legacy-module-page td:last-child button.edit-item-btn { background:#2563eb !important; }
+        .legacy-module-page td:last-child button.edit-item-btn:hover { background:#1d4ed8 !important; }
         .legacy-module-page td:last-child button.delete-item-btn { background:#dc2626 !important; }
         .legacy-module-page td:last-child button.delete-item-btn:hover { background:#b91c1c !important; }
         .legacy-module-page td:last-child { white-space: nowrap; }
-        .legacy-module-page td:last-child button+button { margin-left: 4px; }
         .items-search { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 16px; }
         .items-search input { min-width:280px; flex:1; max-width:560px; padding:9px 12px; border:1px solid #b9d0d5; border-radius:7px; background:#fff; }
         .items-search select { min-width:160px; padding:9px 12px; border:1px solid #b9d0d5; border-radius:7px; background:#fff; }
@@ -44,7 +62,7 @@
         .qr-modal-content { background:#fff; padding:20px; border-radius:8px; text-align:center; max-width:400px; }
         .qr-modal-content img { max-width:300px; height:auto; margin:15px 0; }
         .qr-modal-close { background:#6c757d; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; margin-top:15px; }
-        @media (max-width: 700px) { .legacy-module-page { padding: 1rem; overflow-x: auto; } table { min-width: 760px; } }
+        @media (max-width: 700px) { .legacy-module-page { padding: 1rem; } .items-table { min-width:1050px; } }
     </style>
 </head>
 <body class="school-page min-h-screen lg:flex">
@@ -52,18 +70,22 @@
 
     <main class="school-content flex-1 min-w-0">
         <div class="legacy-module-page">
-            <h1>Inventory Items</h1>
+            <h1>{{ !empty($consumablesOnly) ? 'Consumables Inventory' : 'Inventory Items' }}</h1>
             @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
                 <button id="newItem" style="margin-left:12px"><span aria-hidden="true">＋</span> Add New Item</button>
             @endif
-            <form method="GET" action="{{ route('inventory.items.list') }}" class="items-search">
+            <form method="GET" action="{{ !empty($consumablesOnly) ? route('inventory.consumables.list') : route('inventory.items.list') }}" class="items-search">
                 <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by item name, SKU, classification, or department" aria-label="Search inventory items">
-                <select name="classification" aria-label="Filter by classification">
-                    <option value="">All Classifications</option>
-                    @foreach($classifications as $classification)
-                        <option value="{{ $classification }}" @selected(request('classification') === $classification)>{{ $classification }}</option>
-                    @endforeach
-                </select>
+                @if(!empty($consumablesOnly))
+                    <span class="px-3 py-2 rounded-md bg-emerald-50 text-emerald-800">Classification: Consumable</span>
+                @else
+                    <select name="classification" aria-label="Filter by classification">
+                        <option value="">All Classifications</option>
+                        @foreach($classifications as $classification)
+                            <option value="{{ $classification }}" @selected(request('classification') === $classification)>{{ $classification }}</option>
+                        @endforeach
+                    </select>
+                @endif
                 <select name="location" aria-label="Filter by department">
                     <option value="">All Departments</option>
                     @foreach($locations as $location)
@@ -77,9 +99,10 @@
                     <option value="out_of_stock" @selected(request('stock_status') === 'out_of_stock')>Out of stock</option>
                 </select>
                 <button type="submit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>Search</button>
-                @if(request()->hasAny(['search', 'classification', 'location', 'stock_status', 'low_stock']))<a href="{{ route('inventory.items.list') }}">Clear</a>@endif
+                @if(request()->hasAny(['search', 'classification', 'location', 'stock_status', 'low_stock']))<a href="{{ !empty($consumablesOnly) ? route('inventory.consumables.list') : route('inventory.items.list') }}">Clear</a>@endif
             </form>
-            <table>
+            <div class="items-table-wrap">
+            <table class="items-table" aria-label="Inventory items">
                 <thead>
                     <tr><th>Name</th><th>Classification</th><th>Qty</th><th>Department</th><th>Status</th><th>Date Added</th><th>QR</th><th>Actions</th></tr>
                 </thead>
@@ -96,17 +119,20 @@
                         @endphp
                         <td><span style="{{ $statusClass }};padding:3px 8px;border-radius:999px;font-size:12px;font-weight:700">{{ $item->quantity <= 0 ? 'Out of stock' : ($item->quantity <= 5 ? 'Low stock' : 'Available') }}</span></td>
                         <td>{{ \App\Support\SchoolTime::format($item->created_at, 'M d, Y h:i A') }}</td>
-                        <td><button class="qr-btn" onclick="generateQR({{ $item->id }}, '{{ addslashes($item->name) }}')">Generate QR</button></td>
+                        <td><button type="button" class="item-action-btn qr-btn" aria-label="Generate QR codes for {{ $item->name }}" title="Generate QR codes" onclick="generateQR({{ $item->id }}, '{{ addslashes($item->name) }}')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM19 14v2M14 19h2M19 19h2v2"/></svg></button></td>
                         @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
                         <td>
-                            <button onclick="editItem({{ $item->id }}, '{{ addslashes($item->name) }}', {{ (int)$item->quantity }}, '{{ addslashes($item->location) }}')">Edit</button>
-                            <button class="delete-item-btn" onclick="deleteItem({{ $item->id }})">Delete</button>
+                            <div class="item-actions">
+                                <button type="button" class="item-action-btn edit-item-btn" aria-label="Edit {{ $item->name }}" title="Edit item" onclick="editItem({{ $item->id }}, '{{ addslashes($item->name) }}', {{ (int)$item->quantity }}, '{{ addslashes($item->location) }}')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button>
+                                <button type="button" class="item-action-btn delete-item-btn" aria-label="Delete {{ $item->name }}" title="Delete item" onclick="deleteItem({{ $item->id }})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></svg></button>
+                            </div>
                         </td>
                         @endif
                     </tr>
                 @endforeach
                 </tbody>
             </table>
+            </div>
 
             @if($items->total() > 0)
                 <div class="pagination">

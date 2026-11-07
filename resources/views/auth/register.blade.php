@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="min-h-screen flex items-center justify-center bg-gray-100 py-8">
-        <div class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden grid grid-cols-1 md:grid-cols-2">
+        <div class="w-full max-w-6xl bg-white shadow-lg rounded-lg overflow-hidden grid grid-cols-1 md:grid-cols-2">
             <div class="p-8">
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold">Victor Bernal Provincial High School</h2>

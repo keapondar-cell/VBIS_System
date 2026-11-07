@@ -33,7 +33,7 @@ class InventoryMonitoringTest extends TestCase
         Item::factory()->create([
             'name' => 'Filtered Gauze',
             'sku' => 'FILTERED-GAUZE',
-            'category' => 'Consumable',
+            'category' => 'Equipment',
             'location' => 'Science Lab',
             'quantity' => 4,
         ]);
@@ -60,7 +60,7 @@ class InventoryMonitoringTest extends TestCase
         $this->actingAs($user)
             ->get('/inventory/items/list?'.http_build_query([
                 'search' => 'Filtered',
-                'classification' => 'Consumable',
+                'classification' => 'Equipment',
                 'location' => 'Science Lab',
                 'stock_status' => 'low_stock',
             ]))
@@ -71,6 +71,48 @@ class InventoryMonitoringTest extends TestCase
             ->assertDontSee('Out of Stock Gauze')
             ->assertSee('name="stock_status"', false)
             ->assertSee('value="low_stock" selected', false);
+    }
+
+    public function test_inventory_items_page_excludes_consumables_and_classification_filter(): void
+    {
+        Item::factory()->create(['name' => 'Regular Equipment', 'category' => 'Equipment']);
+        Item::factory()->create(['name' => 'Consumable Gloves', 'category' => 'Consumable']);
+        Item::factory()->create(['name' => 'Case Variant Supply', 'category' => ' consumable ']);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('inventory.items.list'))
+            ->assertOk()
+            ->assertSee('Regular Equipment')
+            ->assertDontSee('Consumable Gloves')
+            ->assertDontSee('Case Variant Supply')
+            ->assertDontSee('>Consumable</option>', false)
+            ->assertDontSee('> consumable </option>', false);
+    }
+
+    public function test_consumables_inventory_shows_only_consumable_classifications(): void
+    {
+        $consumable = Item::factory()->create([
+            'name' => 'Nitrile Gloves',
+            'category' => 'Consumable',
+        ]);
+        $caseVariant = Item::factory()->create([
+            'name' => 'Paper Towels',
+            'category' => ' consumable ',
+        ]);
+        Item::factory()->create([
+            'name' => 'Lab Beaker',
+            'category' => 'Equipment',
+        ]);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('inventory.consumables.list'))
+            ->assertOk()
+            ->assertSee('Consumables Inventory')
+            ->assertSee($consumable->name)
+            ->assertSee($caseVariant->name)
+            ->assertDontSee('Lab Beaker')
+            ->assertSee('Classification: Consumable')
+            ->assertSee(route('inventory.consumables.list'), false);
     }
 
     public function test_inventory_items_low_stock_link_filters_items_and_keeps_anchor_targets(): void

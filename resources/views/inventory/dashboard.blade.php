@@ -243,8 +243,8 @@
                                 <a class="dashboard-action" href="{{ route('inventory.items.list') }}">View items</a>
                                 <a class="dashboard-action" href="{{ route('inventory.transactions.list') }}">Transactions</a>
                                 <a class="dashboard-action" href="{{ route('inventory.issues.list') }}">Issues</a>
-                                <a class="dashboard-action secondary" href="/inventory/items/export">Export CSV</a>
-                                <a class="dashboard-action secondary" href="/inventory/items/export?format=pdf">Export PDF</a>
+                                <x-export-link href="/inventory/items/export" type="csv" label="Export inventory items as CSV" />
+                                <x-export-link href="/inventory/items/export?format=pdf" type="pdf" label="Export inventory items as PDF" />
                             </div>
                         </section>
 

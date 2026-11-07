@@ -13,8 +13,8 @@
                         <p class="text-sm text-gray-600">Borrowing and return transactions retrieved from current inventory movement records.</p>
                     </div>
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <a href="{{ route('inventory.reports.export', ['type' => 'transactions', 'format' => 'csv']) }}" style="display:inline-flex; align-items:center; justify-content:center; width:130px; height:42px; background:#0d6c3f; color:#ffffff; font-size:16px; font-weight:700; text-decoration:none; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); line-height:1; border:0;">Export CSV</a>
-                        <a href="{{ route('inventory.reports.export', ['type' => 'transactions', 'format' => 'pdf']) }}" style="display:inline-flex; align-items:center; justify-content:center; width:130px; height:42px; background:#d63c31; color:#ffffff; font-size:16px; font-weight:700; text-decoration:none; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); line-height:1; border:0;">Export PDF</a>
+                        <x-export-link href="{{ route('inventory.reports.export', ['type' => 'transactions', 'format' => 'csv']) }}" type="csv" label="Export borrowing report as CSV" />
+                        <x-export-link href="{{ route('inventory.reports.export', ['type' => 'transactions', 'format' => 'pdf']) }}" type="pdf" label="Export borrowing report as PDF" />
                     </div>
                 </div>
 

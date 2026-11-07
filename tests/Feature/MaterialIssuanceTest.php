@@ -59,7 +59,30 @@ class MaterialIssuanceTest extends TestCase
         $this->assertNotNull($issue->fresh()->expected_return_at);
     }
 
-    public function test_material_issue_page_exposes_borrow_option_for_teachers(): void
+    public function test_teacher_cannot_edit_request_to_an_out_of_stock_item(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create();
+        $outOfStockItem = Item::factory()->create(['quantity' => 0]);
+        $issue = MaterialIssue::factory()->create([
+            'item_id' => $item->id,
+            'issued_to_user_id' => $teacher->id,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($teacher)
+            ->patchJson('/inventory/issues/'.$issue->id, [
+                'item_id' => $outOfStockItem->id,
+                'quantity' => 1,
+                'purpose' => 'Updated classroom purpose',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error', 'This item is out of stock and cannot be requested.');
+
+        $this->assertSame($item->id, $issue->fresh()->item_id);
+    }
+
+    public function test_material_issue_page_is_separate_from_borrowing(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
         Item::factory()->create(['name' => 'Consumable Materials', 'category' => 'Consumable']);
@@ -67,8 +90,8 @@ class MaterialIssuanceTest extends TestCase
         $this->actingAs($teacher)
             ->get('/inventory/issues/list')
             ->assertOk()
-            ->assertSee('Borrow')
             ->assertSee('Material Issue')
+            ->assertDontSee('option value="borrow"', false)
             ->assertSee('Computer Lab')
             ->assertSee('Science Lab')
             ->assertSee('Library')
@@ -76,12 +99,194 @@ class MaterialIssuanceTest extends TestCase
             ->assertSee('SHS Department')
             ->assertSee('Requested date & time')
             ->assertSee('Expected Return Date')
+            ->assertSee('Out of stock')
             ->assertSee("selectedItemClassification.trim().toLowerCase() === 'consumable'", false)
             ->assertSee('type="datetime-local"', false);
 
         $this->getJson('/inventory/items/search?q=Consumable')
             ->assertOk()
             ->assertJsonPath('0.category', 'Consumable');
+    }
+
+    public function test_property_custodian_can_select_a_user_for_a_material_issue_request(): void
+    {
+        $custodian = User::factory()->create(['role' => 'property_custodian', 'name' => 'Custodian']);
+        $teacher = User::factory()->create(['role' => 'teacher', 'name' => 'Selected Teacher']);
+        $inactiveUser = User::factory()->create([
+            'role' => 'teacher',
+            'name' => 'Inactive Teacher Account',
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($custodian)
+            ->get(route('inventory.issues.list'))
+            ->assertOk()
+            ->assertSee('Issue to user')
+            ->assertSee('value="'.$teacher->id.'"', false)
+            ->assertSee($teacher->name)
+            ->assertDontSee($inactiveUser->name);
+
+        $item = Item::factory()->create();
+        $this->postJson(route('inventory.issues.store'), [
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'purpose' => 'Requesting on behalf of teacher',
+            'issued_to_user_id' => $teacher->id,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('issued_to_user_id', $teacher->id);
+    }
+
+    public function test_admin_and_teacher_material_issue_forms_default_to_only_their_own_account(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher', 'name' => 'Signed In Teacher']);
+        $otherUser = User::factory()->create(['role' => 'teacher', 'name' => 'Other Teacher']);
+
+        $response = $this->actingAs($teacher)
+            ->get(route('inventory.issues.list'));
+        $response
+            ->assertOk()
+            ->assertSee('value="'.$teacher->id.'" selected', false)
+            ->assertSee($teacher->name);
+
+        preg_match('/<select id="ci_user"[^>]*>(.*?)<\/select>/s', $response->getContent(), $userSelect);
+        $this->assertNotEmpty($userSelect);
+        $this->assertStringContainsString($teacher->name, $userSelect[1]);
+        $this->assertStringNotContainsString($otherUser->name, $userSelect[1]);
+
+        $admin = User::factory()->create(['role' => 'admin', 'name' => 'Signed In Admin']);
+        $adminResponse = $this->actingAs($admin)->get(route('inventory.issues.list'));
+        $adminResponse->assertOk()
+            ->assertSee('value="'.$admin->id.'" selected', false);
+        preg_match('/<select id="ci_user"[^>]*>(.*?)<\/select>/s', $adminResponse->getContent(), $adminSelect);
+        $this->assertNotEmpty($adminSelect);
+        $this->assertStringContainsString($admin->name, $adminSelect[1]);
+        $this->assertStringNotContainsString($otherUser->name, $adminSelect[1]);
+
+        $item = Item::factory()->create();
+        $this->actingAs($teacher);
+        $this->postJson(route('inventory.issues.store'), [
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'purpose' => 'For classroom supplies',
+            'issued_to_user_id' => $otherUser->id,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('issued_to_user_id', $teacher->id);
+    }
+
+    public function test_teacher_cannot_request_material_when_item_is_out_of_stock(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create(['quantity' => 0]);
+
+        $this->actingAs($teacher)
+            ->postJson('/inventory/issues', [
+                'item_id' => $item->id,
+                'quantity' => 1,
+                'purpose' => 'For classroom activity',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error', 'This item is out of stock and cannot be requested.');
+
+        $this->assertDatabaseMissing('material_issues', [
+            'item_id' => $item->id,
+            'issued_to_user_id' => $teacher->id,
+        ]);
+    }
+
+    public function test_admin_can_transfer_an_approved_material_issue_to_another_user_without_changing_stock(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $previousUser = User::factory()->create(['role' => 'teacher']);
+        $newUser = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create(['quantity' => 6]);
+        $issue = MaterialIssue::factory()->create([
+            'item_id' => $item->id,
+            'issued_to_user_id' => $previousUser->id,
+            'quantity' => 2,
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson(route('inventory.issues.transfer', $issue), [
+                'new_user_id' => $newUser->id,
+                'notes' => 'Original assignee is retiring',
+            ])
+            ->assertOk()
+            ->assertJsonPath('issued_to_user_id', $newUser->id);
+
+        $this->assertSame(6, $item->fresh()->quantity);
+        $this->assertSame($newUser->id, $issue->fresh()->issued_to_user_id);
+        $this->assertDatabaseHas('inventory_transactions', [
+            'item_id' => $item->id,
+            'user_id' => $previousUser->id,
+            'affected_user_id' => $newUser->id,
+            'performed_by' => $admin->id,
+            'transaction_type' => 'transfer',
+            'quantity' => 2,
+            'quantity_change' => 0,
+            'old_quantity' => 6,
+            'new_quantity' => 6,
+            'reason' => 'Material issuance transfer',
+            'remarks' => 'Original assignee is retiring',
+        ]);
+    }
+
+    public function test_material_issuance_actions_offer_transfer_for_approved_items(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $holder = User::factory()->create(['role' => 'teacher']);
+        $recipient = User::factory()->create(['role' => 'teacher', 'name' => 'New Assignee']);
+        MaterialIssue::factory()->create([
+            'item_id' => Item::factory(),
+            'issued_to_user_id' => $holder->id,
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/inventory/issues/list')
+            ->assertOk()
+            ->assertSee('Transfer Issued Item')
+            ->assertSee('Transfer to:')
+            ->assertSee($recipient->name)
+            ->assertSee('/inventory/issues/${issueId}/transfer', false);
+    }
+
+    public function test_only_admins_and_property_custodians_can_transfer_material_issues(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $oldUser = User::factory()->create(['role' => 'teacher']);
+        $newUser = User::factory()->create(['role' => 'teacher']);
+        $issue = MaterialIssue::factory()->create([
+            'issued_to_user_id' => $oldUser->id,
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($teacher)
+            ->postJson(route('inventory.issues.transfer', $issue), ['new_user_id' => $newUser->id])
+            ->assertForbidden();
+
+        $this->assertSame($oldUser->id, $issue->fresh()->issued_to_user_id);
+        $this->assertDatabaseMissing('inventory_transactions', [
+            'transaction_type' => 'transfer',
+            'item_id' => $issue->item_id,
+        ]);
+    }
+
+    public function test_pending_material_issue_cannot_be_transferred(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $oldUser = User::factory()->create(['role' => 'teacher']);
+        $newUser = User::factory()->create(['role' => 'teacher']);
+        $issue = MaterialIssue::factory()->create(['issued_to_user_id' => $oldUser->id]);
+
+        $this->actingAs($admin)
+            ->postJson(route('inventory.issues.transfer', $issue), ['new_user_id' => $newUser->id])
+            ->assertUnprocessable()
+            ->assertJsonPath('error', 'Only approved material issuances can be transferred.');
+
+        $this->assertSame($oldUser->id, $issue->fresh()->issued_to_user_id);
     }
 
     public function test_consumable_material_issue_does_not_save_or_copy_an_expected_return_date(): void

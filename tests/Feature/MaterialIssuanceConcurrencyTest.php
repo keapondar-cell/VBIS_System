@@ -21,7 +21,7 @@ class MaterialIssuanceConcurrencyTest extends TestCase
         $item = Item::factory()->create(['quantity' => 5]);
 
         // create two pending requests totaling more than stock
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->create(['role' => 'property_custodian']));
         $to1 = User::factory()->create();
         $to2 = User::factory()->create();
         $r1 = $this->post('/inventory/issues', ['item_id' => $item->id, 'quantity' => 3, 'issued_to_user_id' => $to1->id, 'purpose' => 'For classroom use']);

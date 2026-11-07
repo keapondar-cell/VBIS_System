@@ -30,7 +30,104 @@ class Module3AccessTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.users'))
             ->assertOk()
-            ->assertSee(route('register'));
+            ->assertSee(route('register'))
+            ->assertSee('aria-label="Export users as CSV"', false)
+            ->assertSee('aria-label="Export users as PDF"', false)
+            ->assertSee('viewBox="0 0 48 48"', false)
+            ->assertDontSee('>Export CSV</a>', false)
+            ->assertDontSee('>Export PDF</a>', false);
+    }
+
+    public function test_reports_menu_exports_use_csv_excel_and_pdf_icons(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('inventory.reports.menu'))
+            ->assertOk()
+            ->assertSee('aria-label="Export departments as PDF"', false)
+            ->assertSee('aria-label="Export departments as Excel"', false)
+            ->assertSee('aria-label="Export transactions as PDF"', false)
+            ->assertSee('aria-label="Export transactions as Excel"', false)
+            ->assertSee('format=excel')
+            ->assertSee('format=pdf');
+    }
+
+    public function test_sidebar_separates_borrowing_material_issuance_and_transactions(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+
+        $this->actingAs($teacher)
+            ->get(route('inventory.issues.list'))
+            ->assertOk()
+            ->assertSee('Borrowing')
+            ->assertSee('Material Issuance')
+            ->assertSee('Transactions')
+            ->assertSee('Consumables')
+            ->assertDontSee('>Requests</a>', false)
+            ->assertSee(route('inventory.borrowing.list'), false)
+            ->assertSee(route('inventory.consumables.list'), false)
+            ->assertSee(route('inventory.issues.list'), false)
+            ->assertSee(route('inventory.transactions.list'), false)
+            ->assertDontSee(route('inventory.transactions.history'), false);
+
+        $this->get(route('inventory.borrowing.list'))
+            ->assertOk()
+            ->assertSee('Borrowing Transactions')
+            ->assertSee('Request to Borrow')
+            ->assertSee('name="transaction_type" type="hidden" value="borrow"', false)
+            ->assertSee('transaction_type: borrowingOnly ? \'borrow\'', false)
+            ->assertSee('class="transaction-results borrowing-results"', false)
+            ->assertSee('Borrower</th><th>Qty</th><th>Purpose</th>', false)
+            ->assertSee('class="borrow-status', false);
+    }
+
+    public function test_material_issuance_page_does_not_offer_borrowing_as_a_request_type(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+
+        $this->actingAs($teacher)
+            ->get(route('inventory.issues.list'))
+            ->assertOk()
+            ->assertSee('Submit and track material issuance requests')
+            ->assertDontSee('ci_request_type')
+            ->assertDontSee('option value="borrow"', false);
+    }
+
+    public function test_admin_can_filter_users_by_search_role_and_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $matchingUser = User::factory()->create([
+            'name' => 'Matching Teacher',
+            'email' => 'matching@example.com',
+            'role' => 'teacher',
+            'is_active' => true,
+        ]);
+        User::factory()->create([
+            'name' => 'Matching Custodian',
+            'email' => 'custodian@example.com',
+            'role' => 'property_custodian',
+            'is_active' => true,
+        ]);
+        User::factory()->create([
+            'name' => 'Pending Teacher',
+            'email' => 'pending@example.com',
+            'role' => 'teacher',
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users', [
+                'search' => 'matching',
+                'role' => 'teacher',
+                'status' => 'active',
+            ]))
+            ->assertOk()
+            ->assertSeeText($matchingUser->name)
+            ->assertDontSeeText('Matching Custodian')
+            ->assertDontSeeText('Pending Teacher')
+            ->assertSee('value="teacher" selected', false)
+            ->assertSee('value="active" selected', false);
     }
 
     public function test_property_custodian_can_access_monitoring_and_generate_qr_views(): void

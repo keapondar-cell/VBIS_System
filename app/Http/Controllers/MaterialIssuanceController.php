@@ -46,14 +46,20 @@ class MaterialIssuanceController extends Controller
             'expected_return_at' => SchoolTime::normalizeInput($request->input('expected_return_at')),
         ]);
 
-        // Teachers and admins can create material requests.
-        if (! $user || (! $user->isTeacher() && ! $user->isAdmin())) {
-            return response()->json(['error' => 'Only teachers and admins can request items.'], 403);
+        // Teachers and admins request for themselves; property custodians may request for another user.
+        if (! $user || (! $user->isTeacher() && ! $user->isAdmin() && ! $user->isPropertyCustodian())) {
+            return response()->json(['error' => 'You are not authorized to request material issuance.'], 403);
+        }
+
+        if (! $user->isPropertyCustodian()) {
+            $request->merge(['issued_to_user_id' => $user->id]);
         }
 
         $data = $request->validate([
             'item_id' => 'required|integer|exists:items,id',
-            'issued_to_user_id' => 'nullable', // may be numeric id or username/email
+            'issued_to_user_id' => $user->isPropertyCustodian()
+                ? 'required|integer|exists:users,id'
+                : 'required|integer',
             'department_id' => 'nullable|integer|exists:departments,id',
             'requested_for_at' => 'nullable|date',
             'expected_return_at' => [
@@ -72,28 +78,9 @@ class MaterialIssuanceController extends Controller
         $data['notes'] = $data['purpose'];
         unset($data['purpose']);
 
-        // Resolve issued_to_user_id which may be a numeric id or a username/email
-        $issuedRaw = $request->input('issued_to_user_id');
-        $issuedResolved = null;
-        if (!is_null($issuedRaw) && $issuedRaw !== '') {
-            if (is_numeric($issuedRaw)) {
-                $issuedResolved = (int) $issuedRaw;
-                if (!User::where('id', $issuedResolved)->exists()) {
-                    return response()->json(['error' => 'Issued user id not found'], 422);
-                }
-            } else {
-                // try email or name match
-                $u = User::where('email', $issuedRaw)->orWhere('name', $issuedRaw)->first();
-                if ($u) {
-                    $issuedResolved = $u->id;
-                } else {
-                    return response()->json(['error' => 'Issued user not found by name or email'], 422);
-                }
-            }
-        }
-        // default to current user when not provided
-        if (is_null($issuedResolved) && $request->user()) {
-            $issuedResolved = $request->user()->id;
+        $issuedResolved = (int) $data['issued_to_user_id'];
+        if (! User::whereKey($issuedResolved)->where('is_active', true)->exists()) {
+            return response()->json(['error' => 'The selected user is not active.'], 422);
         }
         $data['issued_to_user_id'] = $issuedResolved;
 
@@ -108,7 +95,18 @@ class MaterialIssuanceController extends Controller
             return response()->json(['error' => 'Duplicate pending request'], 409);
         }
 
-        $issue = MaterialIssue::create(array_merge($data, ['status' => 'pending']));
+        $issue = DB::transaction(function () use ($data) {
+            $item = Item::lockForUpdate()->findOrFail($data['item_id']);
+            if ($item->quantity <= 0) {
+                return null;
+            }
+
+            return MaterialIssue::create(array_merge($data, ['status' => 'pending']));
+        });
+
+        if (! $issue) {
+            return response()->json(['error' => 'This item is out of stock and cannot be requested.'], 422);
+        }
 
         $managerRoleUsers = User::whereIn('role', ['admin', 'property_custodian'])->get();
         foreach ($managerRoleUsers as $manager) {
@@ -118,8 +116,8 @@ class MaterialIssuanceController extends Controller
             }
         }
 
-        // warn if requested > available stock (not blocking request)
-        $item = Item::find($data['item_id']);
+        // Keep reporting requests that exceed the available quantity for compatibility.
+        $item = Item::findOrFail($data['item_id']);
         $over = false;
         if ($item && $item->quantity < $data['quantity']) {
             $over = true;
@@ -210,14 +208,67 @@ class MaterialIssuanceController extends Controller
         return response()->json($issue);
     }
 
+    public function transfer(Request $request, $id)
+    {
+        $user = $request->user();
+        if (! $user || (! $user->isAdmin() && ! $user->isPropertyCustodian())) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
+        $data = $request->validate([
+            'new_user_id' => ['required', 'integer', 'exists:users,id'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        return DB::transaction(function () use ($data, $id, $user) {
+            $issue = MaterialIssue::lockForUpdate()->findOrFail($id);
+            if ($issue->status !== 'approved') {
+                return response()->json(['error' => 'Only approved material issuances can be transferred.'], 422);
+            }
+
+            $previousUser = User::find($issue->issued_to_user_id);
+            $newUser = User::where('is_active', true)->find($data['new_user_id']);
+            if (! $newUser) {
+                return response()->json(['error' => 'The new user must have an active account.'], 422);
+            }
+            if ((int) $issue->issued_to_user_id === (int) $newUser->id) {
+                return response()->json(['error' => 'Select a different user to transfer this issuance.'], 422);
+            }
+
+            $item = Item::findOrFail($issue->item_id);
+            $issue->issued_to_user_id = $newUser->id;
+            $issue->save();
+
+            InventoryTransaction::create([
+                'item_id' => $item->id,
+                'user_id' => $previousUser?->id,
+                'affected_user_id' => $newUser->id,
+                'performed_by' => $user->id,
+                'department_id' => $issue->department_id,
+                'transaction_type' => 'transfer',
+                'quantity' => $issue->quantity,
+                'quantity_change' => 0,
+                'old_quantity' => $item->quantity,
+                'new_quantity' => $item->quantity,
+                'status' => 'completed',
+                'reason' => 'Material issuance transfer',
+                'notes' => 'Material issue #'.$issue->id.' transferred from '.($previousUser?->name ?? 'an unavailable user').' to '.$newUser->name,
+                'remarks' => $data['notes'] ?? null,
+            ]);
+
+            return response()->json($issue->fresh(['item', 'issuedTo', 'department']));
+        });
+    }
+
     // UI view for issues list
     public function issuesView()
     {
         $departments = Department::where('is_active', true)
             ->orderByRaw("CASE name WHEN 'Library' THEN 1 WHEN 'Computer Lab' THEN 2 WHEN 'Science Lab' THEN 3 WHEN 'JHS Department' THEN 4 WHEN 'SHS Department' THEN 5 ELSE 6 END")
             ->get();
+        $users = User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']);
 
-        return view('inventory.issues', compact('departments'));
+        return view('inventory.issues', compact('departments', 'users'));
     }
 
     public function update(Request $request, $id)
@@ -264,14 +315,27 @@ class MaterialIssuanceController extends Controller
             ],
         ]);
 
-        $issue->update([
-            'item_id' => $data['item_id'],
-            'quantity' => $data['quantity'],
-            'department_id' => $data['department_id'] ?? null,
-            'requested_for_at' => $data['requested_for_at'] ?? null,
-            'expected_return_at' => $data['expected_return_at'] ?? null,
-            'notes' => $data['purpose'],
-        ]);
+        $updated = DB::transaction(function () use ($issue, $data) {
+            $item = Item::lockForUpdate()->findOrFail($data['item_id']);
+            if ($item->quantity <= 0) {
+                return false;
+            }
+
+            $issue->update([
+                'item_id' => $data['item_id'],
+                'quantity' => $data['quantity'],
+                'department_id' => $data['department_id'] ?? null,
+                'requested_for_at' => $data['requested_for_at'] ?? null,
+                'expected_return_at' => $data['expected_return_at'] ?? null,
+                'notes' => $data['purpose'],
+            ]);
+
+            return true;
+        });
+
+        if (! $updated) {
+            return response()->json(['error' => 'This item is out of stock and cannot be requested.'], 422);
+        }
 
         return response()->json($issue->fresh(['item', 'issuedTo']), 200);
     }
