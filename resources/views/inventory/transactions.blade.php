@@ -12,7 +12,9 @@
         .transaction-results tbody tr:nth-child(even){background:#f8fbfb}
         .transaction-results tbody tr:hover{background:#eff8f7}
         .transaction-results .transaction-id{width:64px;min-width:64px;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
-        .transaction-results .transaction-item{color:#123b5d;font-weight:700}
+        .transaction-results .transaction-item{width:220px;min-width:220px;color:#123b5d;font-weight:700;white-space:nowrap}
+        .transaction-results .transaction-user{width:170px;min-width:170px;white-space:nowrap}
+        .transaction-results .transaction-notes{width:260px;min-width:260px;max-width:320px;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
         .transaction-results .transaction-quantity{text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
         .transaction-results .transaction-type-cell{min-width:110px;white-space:nowrap}
         .transaction-results .transaction-type-badge{display:inline-flex;align-items:center;justify-content:center;max-width:100%;padding:5px 9px;border-radius:999px;background:#e2e8f0;color:#334155;font-size:11px;font-weight:700;line-height:1.2;text-transform:capitalize;white-space:nowrap}
@@ -43,8 +45,9 @@
         .borrowing-results .borrow-id{width:64px;min-width:64px;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
         .borrowing-results tbody tr:nth-child(even){background:#f8fbfb}
         .borrowing-results tbody tr:hover{background:#eff8f7}
-        .borrowing-results .borrow-item{color:#123b5d;font-weight:700}
-        .borrowing-results .borrow-purpose{min-width:150px;max-width:250px;color:#536879}
+        .borrowing-results .borrow-item{width:220px;min-width:220px;color:#123b5d;font-weight:700;white-space:nowrap}
+        .borrowing-results .borrow-user{width:170px;min-width:170px;white-space:nowrap}
+        .borrowing-results .borrow-purpose{width:260px;min-width:260px;max-width:320px;color:#536879;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
         .borrowing-results .borrow-quantity{text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
         .borrowing-results .borrow-date{white-space:nowrap}
         .borrowing-results .borrow-status{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:#edf2f7;color:#475569;font-size:11px;font-weight:700;text-transform:capitalize;white-space:nowrap}
@@ -72,8 +75,35 @@
             #exportPdf:hover{background:#b71c1c}
         .pager{margin-top:10px}
         .link{color:#0b61d8;cursor:pointer}
-        .modal{position:fixed;inset:0;z-index:1000;box-sizing:border-box;width:100vw;height:100vh;padding:16px;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;overflow-y:auto}
-        .modal .panel{box-sizing:border-box;background:#fff;padding:20px;max-width:800px;width:100%;max-height:calc(100vh - 32px);overflow-y:auto;border-radius:12px;box-shadow:0 20px 50px rgba(18,59,93,.2)}
+        .modal{position:fixed;inset:0;z-index:1000;box-sizing:border-box;width:100vw;height:100vh;padding:20px;background:rgba(15,23,42,.18);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;overflow-y:auto}
+        .modal .panel{box-sizing:border-box;background:#f2f5f7;padding:24px 28px 20px;max-width:980px;width:100%;max-height:calc(100vh - 32px);overflow-y:auto;border:1px solid #dfe6eb;border-radius:18px;box-shadow:0 20px 50px rgba(18,59,93,.18)}
+        .create-form-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+        .create-form-head h3{margin:0;color:#1d2a36;font-size:2.1rem;line-height:1.2;font-weight:700}
+        .create-form{display:flex;flex-direction:column;gap:12px}
+        .create-field{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);align-items:center;gap:18px 20px;min-height:58px}
+        .create-field > span{font-size:1.05rem;font-weight:700;color:#1f2d3d}
+        .create-field > select,.create-field > input{width:100%;height:54px;padding:0 16px;border:1px solid #c8d1db;border-radius:12px;background:#f8fafc;color:#1f2d3d;font-size:1.05rem;box-sizing:border-box;transition:border-color .15s ease, box-shadow .15s ease, background .15s ease}
+        .create-field > select:focus,.create-field > input:focus{outline:none;border-color:#2b86c5;background:#fff;box-shadow:0 0 0 4px rgba(43,134,197,.12)}
+        .create-field.full-width{grid-template-columns:1fr}
+        .create-field.full-width > span{display:block;margin-bottom:8px}
+        .create-field.full-width > input,
+        .create-field.full-width > select{width:100%}
+        .create-field .date-input{padding-right:44px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235f6f7a' stroke-width='1.7'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8 2v4M16 2v4M3 9h18M5 5h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:20px}
+        .create-actions{display:flex;justify-content:flex-end;gap:14px;margin-top:8px;padding-top:8px}
+        .close-ghost{background:#8a939d;border-color:#8a939d;padding:12px 24px;font-weight:700;border-radius:12px}
+        .close-ghost:hover{background:#6f7b88;border-color:#6f7b88}
+        .btn-create{background:linear-gradient(180deg,#2f9cf8 0%,#1d7ed6 100%);border-color:#1d7ed6;padding:14px 28px;border-radius:12px;font-weight:700;box-shadow:0 10px 20px rgba(29,126,214,.2)}
+        .btn-create:hover{background:linear-gradient(180deg,#268ce5 0%,#196fba 100%);border-color:#196fba}
+        .btn-cancel{background:#a7b0ba;border-color:#a7b0ba;padding:14px 28px;border-radius:12px;font-weight:700}
+        .btn-cancel:hover{background:#8f98a3;border-color:#8f98a3}
+        @media (max-width: 720px){
+            .modal .panel{padding:20px 18px}
+            .create-form-head{align-items:flex-start}
+            .create-form-head h3{font-size:1.8rem}
+            .create-field{grid-template-columns:1fr;gap:8px}
+            .create-actions{flex-direction:column}
+            .create-actions .btn{width:100%}
+        }
         @media (max-width:700px){.legacy-module-page{padding:1rem .75rem}.toolbar{align-items:flex-start}.card{padding:14px}.filters{align-items:stretch!important}.filters label{width:100%}.filters input,.filters select{width:100%;box-sizing:border-box}}
     </style>
 
@@ -94,9 +124,30 @@
 
         <div class="card">
             <div class="filters" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                <label class="muted">Item ID <input id="f_item" type="text" placeholder="item id"></label>
-                <label class="muted">User <input id="f_user" type="text" placeholder="user name"></label>
-                <label class="muted">Department <input id="f_dept" type="text" placeholder="department name"></label>
+                <label class="muted">Item Name
+                    <select id="f_item">
+                        <option value="">Select item</option>
+                        @foreach($items ?? [] as $item)
+                            <option value="{{ $item->id }}">{{ $item->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="muted">User
+                    <select id="f_user">
+                        <option value="">Select user</option>
+                        @foreach($users ?? [] as $user)
+                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="muted">Department
+                    <select id="f_dept">
+                        <option value="">Select department</option>
+                        @foreach($departments ?? [] as $department)
+                            <option value="{{ $department->id }}">{{ $department->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
                 @if(!empty($borrowingOnly))
                     <input id="f_type" type="hidden" value="borrow">
                 @else
@@ -172,12 +223,13 @@
 
         <div id="createModal" class="modal" aria-hidden="true">
             <div class="panel">
-                <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="create-form-head">
                     <h3>{{ !empty($borrowingOnly) ? 'Request to Borrow' : 'New Transaction' }}</h3>
-                    <button id="closeCreate" class="btn secondary">Close</button>
+                    <button id="closeCreate" class="btn secondary close-ghost">Close</button>
                 </div>
-                <form id="createForm" style="margin-top:12px;display:grid;gap:8px">
-                    <label>Item name
+                <form id="createForm" class="create-form">
+                    <label class="create-field">
+                        <span>Item name</span>
                         <select id="c_item_id" name="item_id" required>
                             <option value="">Select item</option>
                             @foreach($items ?? [] as $item)
@@ -188,7 +240,8 @@
                     @if(!empty($borrowingOnly))
                         <input id="c_type" name="transaction_type" type="hidden" value="borrow">
                     @else
-                        <label>Type
+                        <label class="create-field">
+                            <span>Type</span>
                             <select id="c_type" name="transaction_type">
                                 <option value="issue">issue</option>
                                 <option value="receive">receive</option>
@@ -196,12 +249,25 @@
                             </select>
                         </label>
                     @endif
-                    <label>Quantity <input id="c_quantity" name="quantity" type="number" min="1" value="1" required></label>
-                    <label id="createPurposeField">Purpose <input id="c_purpose" name="purpose" placeholder="Specify the reason for borrowing"></label>
-                    <label id="createRequestedAtField"><span id="createRequestedAtLabel">Date borrowed</span> <input id="c_requested_for_at" name="requested_for_at" type="datetime-local"></label>
-                    <label id="createExpectedReturnField"><span id="createExpectedReturnLabel">Expected Return</span> <input id="c_expected_return_at" name="expected_return_at" type="date"></label>
+                    <label class="create-field">
+                        <span>Quantity</span>
+                        <input id="c_quantity" name="quantity" type="number" min="1" value="1" required>
+                    </label>
+                    <label id="createPurposeField" class="create-field">
+                        <span>Purpose</span>
+                        <input id="c_purpose" name="purpose" placeholder="Specify the reason for borrowing">
+                    </label>
+                    <label id="createRequestedAtField" class="create-field">
+                        <span id="createRequestedAtLabel">Date borrowed</span>
+                        <input id="c_requested_for_at" class="date-input" name="requested_for_at" type="datetime-local">
+                    </label>
+                    <label id="createExpectedReturnField" class="create-field">
+                        <span id="createExpectedReturnLabel">Expected Return</span>
+                        <input id="c_expected_return_at" class="date-input" name="expected_return_at" type="date">
+                    </label>
                     @if(empty($borrowingOnly))
-                    <label>User
+                    <label class="create-field">
+                        <span>User</span>
                         <select id="c_user_id" name="user_id">
                             <option value="">Select user</option>
                             @foreach($users ?? [] as $user)
@@ -212,7 +278,8 @@
                     @else
                         <input id="c_user_id" type="hidden" value="{{ auth()->id() }}">
                     @endif
-                    <label>Department
+                    <label class="create-field">
+                        <span>Department</span>
                         <select id="c_department_id" name="department_id">
                             <option value="">Select department</option>
                             @foreach($departments ?? [] as $department)
@@ -220,10 +287,13 @@
                             @endforeach
                         </select>
                     </label>
-                    <label>Notes <input id="c_notes" name="notes"></label>
-                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
-                        <button type="submit" class="btn">Create</button>
-                        <button type="button" id="cancelCreate" class="btn secondary">Cancel</button>
+                    <label class="create-field full-width">
+                        <span>Notes</span>
+                        <input id="c_notes" name="notes">
+                    </label>
+                    <div class="create-actions">
+                        <button type="submit" class="btn btn-create">Create</button>
+                        <button type="button" id="cancelCreate" class="btn btn-cancel secondary">Cancel</button>
                     </div>
                     <div id="createMessage" class="muted" style="margin-top:6px"></div>
                 </form>
@@ -315,8 +385,8 @@
             if(!list || list.length===0){ resultsEl.innerHTML = '<div class="muted">No transactions found.</div>'; return; }
 
             let html = borrowingOnly
-                ? '<table class="borrowing-table" aria-label="Borrowing transactions"><thead><tr><th class="borrow-id">ID</th><th>Item</th><th>Borrower</th><th>Qty</th><th>Purpose</th><th>Department</th><th>Borrow date</th><th>Expected return</th><th>Status</th>'
-                : '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Issue / borrow date</th><th>Expected return</th><th>Condition</th><th>Status</th><th>Notes</th><th>Date</th>';
+                ? '<table class="borrowing-table" aria-label="Borrowing transactions"><thead><tr><th class="borrow-id">ID</th><th>Item</th><th>Borrower</th><th>Qty</th><th class="borrow-purpose">Purpose</th><th>Department</th><th>Borrow date</th><th>Expected return</th><th>Status</th>'
+                : '<table><thead><tr><th>ID</th><th>Item</th><th>User</th><th>Type</th><th>Qty</th><th>Department</th><th>Issue / borrow date</th><th>Expected return</th><th>Condition</th><th>Status</th><th class="transaction-notes">Notes</th><th>Date</th>';
             const canEdit = @json(auth()->user()?->isTeacher() ?? false);
             const canManage = @json(auth()->user()?->isAdmin() || auth()->user()?->isPropertyCustodian());
             if(canEdit || canManage) html += '<th>Actions</th>';
@@ -342,10 +412,10 @@
                 const notes = t.status === 'rejected' && t.rejection_reason ? `${t.notes || ''} | Rejection: ${t.rejection_reason}` : (t.notes || '');
                 if(borrowingOnly){
                     const statusClass = `status-${String(t.status || '').toLowerCase().replace(/[^a-z0-9_-]/g, '')}`;
-                    html += `<tr class="link-row" data-id="${t.id}"><td class="borrow-id">${t.id}</td><td class="borrow-item">${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td class="borrow-quantity">${t.quantity}</td><td class="borrow-purpose">${escapeHtml(notes || '—')}</td><td>${escapeHtml(department || '—')}</td><td class="borrow-date">${escapeHtml(requestedFor)}</td><td class="borrow-date">${escapeHtml(expectedReturnDate)}</td><td><span class="borrow-status ${statusClass}">${statusCell}</span></td>`;
+                    html += `<tr class="link-row" data-id="${t.id}"><td class="borrow-id">${t.id}</td><td class="borrow-item">${t.item?escapeHtml(t.item.name):t.item_id}</td><td class="borrow-user">${t.user?escapeHtml(t.user.name):t.user_id}</td><td class="borrow-quantity">${t.quantity}</td><td class="borrow-purpose">${escapeHtml(notes || '—')}</td><td>${escapeHtml(department || '—')}</td><td class="borrow-date">${escapeHtml(requestedFor)}</td><td class="borrow-date">${escapeHtml(expectedReturnDate)}</td><td><span class="borrow-status ${statusClass}">${statusCell}</span></td>`;
                 } else {
                     const statusClass = `status-${String(t.status || '').toLowerCase().replace(/[^a-z0-9_-]/g, '')}`;
-                    html += `<tr class="link-row" data-id="${t.id}"><td class="transaction-id">${t.id}</td><td class="transaction-item">${t.item?escapeHtml(t.item.name):t.item_id}</td><td>${t.user?escapeHtml(t.user.name):t.user_id}</td><td class="transaction-type-cell">${typeLabel}</td><td class="transaction-quantity">${t.quantity}</td><td>${escapeHtml(department)}</td><td class="transaction-date">${escapeHtml(requestedFor)}</td><td class="transaction-date">${escapeHtml(expectedReturnDate)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td><span class="transaction-status ${statusClass}">${statusCell}</span></td><td>${escapeHtml(notes)}</td><td class="transaction-date">${escapeHtml(formatManilaDateTime(t.created_at))}`;
+                    html += `<tr class="link-row" data-id="${t.id}"><td class="transaction-id">${t.id}</td><td class="transaction-item">${t.item?escapeHtml(t.item.name):t.item_id}</td><td class="transaction-user">${t.user?escapeHtml(t.user.name):t.user_id}</td><td class="transaction-type-cell">${typeLabel}</td><td class="transaction-quantity">${t.quantity}</td><td>${escapeHtml(department)}</td><td class="transaction-date">${escapeHtml(requestedFor)}</td><td class="transaction-date">${escapeHtml(expectedReturnDate)}</td><td>${escapeHtml(t.condition||'Not recorded')}</td><td><span class="transaction-status ${statusClass}">${statusCell}</span></td><td class="transaction-notes">${escapeHtml(notes || '—')}</td><td class="transaction-date">${escapeHtml(formatManilaDateTime(t.created_at))}`;
                 }
                 if(canEdit || canManage){ html += `<td class="${borrowingOnly ? '' : 'transaction-actions'}"><div class="action-buttons">${actions}</div></td>`; }
                 html += `</tr>`;

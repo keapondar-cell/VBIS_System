@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('material_issues', function (Blueprint $table) {
-            $table->dateTime('expected_return_at')->nullable()->after('requested_for_at');
-        });
+        if (!Schema::hasColumn('material_issues', 'expected_return_at')) {
+            Schema::table('material_issues', function (Blueprint $table) {
+                $table->dateTime('expected_return_at')->nullable()->after('requested_for_at');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('material_issues', function (Blueprint $table) {
-            $table->dropColumn('expected_return_at');
-        });
+        if (Schema::hasColumn('material_issues', 'expected_return_at')) {
+            Schema::table('material_issues', function (Blueprint $table) {
+                $table->dropColumn('expected_return_at');
+            });
+        }
     }
 };

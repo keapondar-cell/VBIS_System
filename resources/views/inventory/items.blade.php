@@ -62,7 +62,131 @@
         .qr-modal-content { background:#fff; padding:20px; border-radius:8px; text-align:center; max-width:400px; }
         .qr-modal-content img { max-width:300px; height:auto; margin:15px 0; }
         .qr-modal-close { background:#6c757d; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; margin-top:15px; }
-        @media (max-width: 700px) { .legacy-module-page { padding: 1rem; } .items-table { min-width:1050px; } }
+        .item-modal-backdrop {
+            display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(15, 23, 42, 0.18);
+            backdrop-filter: blur(2px);
+            align-items:center;
+            justify-content:center;
+            z-index:999;
+            padding:24px;
+        }
+        .item-modal-panel {
+            width:min(100%, 920px);
+            background:#f3f5f7;
+            border:1px solid #dfe6eb;
+            border-radius:18px;
+            box-shadow:0 20px 40px rgba(15, 23, 42, 0.12);
+            padding:24px 28px 20px;
+            max-height:90vh;
+            overflow-y:auto;
+        }
+        .item-modal-title {
+            margin:0 0 18px;
+            font-size:2.2rem;
+            line-height:1.1;
+            font-weight:700;
+            color:#1d2a36;
+        }
+        .item-form {
+            display:flex;
+            flex-direction:column;
+            gap:18px;
+        }
+        .item-form-grid {
+            display:grid;
+            grid-template-columns:repeat(2, minmax(0, 1fr));
+            gap:18px 20px;
+        }
+        .item-form-field {
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+        }
+        .item-form-field label {
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+            font-size:1.05rem;
+            font-weight:700;
+            color:#1f2d3d;
+        }
+        .item-form-field input,
+        .item-form-field select,
+        .item-form-field textarea {
+            width:100%;
+            border:1px solid #c9d3dd;
+            border-radius:12px;
+            background:#f8fafc;
+            color:#1f2d3d;
+            padding:14px 16px;
+            font-size:1.05rem;
+            box-sizing:border-box;
+            transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+        }
+        .item-form-field input::placeholder,
+        .item-form-field textarea::placeholder {
+            color:#64748b;
+        }
+        .item-form-field input:focus,
+        .item-form-field select:focus,
+        .item-form-field textarea:focus {
+            outline:none;
+            border-color:#2b86c5;
+            background:#fff;
+            box-shadow:0 0 0 4px rgba(43, 134, 197, 0.12);
+        }
+        .item-form-field textarea {
+            min-height:120px;
+            resize:vertical;
+        }
+        .item-status-field { grid-column:1 / -1; }
+        .item-form-actions {
+            display:flex;
+            gap:14px;
+            padding-top:8px;
+        }
+        .item-primary-btn,
+        .item-secondary-btn {
+            border:none;
+            border-radius:12px;
+            padding:18px 30px;
+            font-size:1.1rem;
+            font-weight:700;
+            cursor:pointer;
+            transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+        }
+        .item-primary-btn {
+            background:linear-gradient(180deg, #2f9cf8 0%, #1d7ed6 100%);
+            color:#fff;
+            box-shadow:0 10px 20px rgba(29,126,214,.2);
+        }
+        .item-secondary-btn {
+            background:#a9b2bd;
+            color:#1f2d3d;
+        }
+        .item-primary-btn:hover,
+        .item-secondary-btn:hover {
+            transform:translateY(-1px);
+        }
+        #itemMessage {
+            min-height:1.2rem;
+            font-size:.95rem;
+            font-weight:600;
+            color:#b45309;
+        }
+        @media (max-width: 700px) {
+            .legacy-module-page { padding: 1rem; }
+            .items-table { min-width:1050px; }
+            .item-form-grid { grid-template-columns:1fr; }
+            .item-modal-panel { padding:20px 18px; }
+            .item-modal-title { font-size:1.8rem; }
+            .item-form-actions { flex-direction:column; }
+            .item-primary-btn,
+            .item-secondary-btn { width:100%; }
+        }
     </style>
 </head>
 <body class="school-page min-h-screen lg:flex">
@@ -160,23 +284,26 @@
         </div>
     </div>
 
-    <div id="itemModal" style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;z-index:999">
-        <div style="background:#fff;padding:20px;max-width:600px;margin:40px auto;border-radius:6px;max-height:90vh;overflow-y:auto">
-            <h3 id="itemModalTitle">New Item</h3>
-            <form id="itemForm">
+    <div id="itemModal" class="item-modal-backdrop">
+        <div class="item-modal-panel">
+            <h3 id="itemModalTitle" class="item-modal-title">New Item</h3>
+            <form id="itemForm" class="item-form">
                 <input type="hidden" id="item_id_field">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                    <div><label style="display:block;margin-bottom:4px"><strong>Name</strong> <input id="i_name" required style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
-                    <div><label style="display:block;margin-bottom:4px"><strong>SKU</strong> <input id="i_sku" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
-                    <div><label style="display:block;margin-bottom:4px"><strong>Classification</strong> <input id="i_classification" list="classificationOptions" placeholder="Consumable, Glassware, etc." style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label><datalist id="classificationOptions"><option value="Consumable"><option value="Glassware"><option value="Chemical"><option value="Equipment"><option value="Office Supply"></datalist></div>
-                    <div><label style="display:block;margin-bottom:4px"><strong>Quantity</strong> <input id="i_quantity" type="number" min="0" value="0" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
-                    <div id="itemCreatedAtField"><label style="display:block;margin-bottom:4px"><strong>Date and Time Added</strong> <input id="i_created_at" type="datetime-local" value="{{ now(\App\Support\SchoolTime::TIMEZONE)->format('Y-m-d\TH:i') }}" required style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"></label></div>
-                    <div><label style="display:block;margin-bottom:4px"><strong>Department</strong> <select id="i_location" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"><option value="">Select department</option><option value="Library">Library</option><option value="Computer Lab">Computer Lab</option><option value="Science Lab">Science Lab</option><option value="JHS Department">JHS Department</option><option value="SHS Department">SHS Department</option></select></label></div>
-                    <div><label style="display:block;margin-bottom:4px"><strong>Status</strong> <select id="i_status" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px"><option value="available">Available</option><option value="out_of_stock">Out of Stock</option><option value="maintenance">Maintenance</option></select></label></div>
+                <div class="item-form-grid">
+                    <div class="item-form-field"><label><span>Name</span><input id="i_name" required></label></div>
+                    <div class="item-form-field"><label><span>SKU</span><input id="i_sku"></label></div>
+                    <div class="item-form-field"><label><span>Classification</span><input id="i_classification" list="classificationOptions" placeholder="Consumable, Glassware, etc."></label><datalist id="classificationOptions"><option value="Consumable"><option value="Glassware"><option value="Chemical"><option value="Equipment"><option value="Office Supply"></datalist></div>
+                    <div class="item-form-field"><label><span>Quantity</span><input id="i_quantity" type="number" min="0" value="0"></label></div>
+                    <div id="itemCreatedAtField" class="item-form-field"><label><span>Date and Time Added</span><input id="i_created_at" type="datetime-local" value="{{ now(\App\Support\SchoolTime::TIMEZONE)->format('Y-m-d\TH:i') }}" required></label></div>
+                    <div class="item-form-field"><label><span>Department</span><select id="i_location"><option value="">Select department</option><option value="Library">Library</option><option value="Computer Lab">Computer Lab</option><option value="Science Lab">Science Lab</option><option value="JHS Department">JHS Department</option><option value="SHS Department">SHS Department</option></select></label></div>
+                    <div class="item-form-field item-status-field"><label><span>Status</span><select id="i_status"><option value="available">Available</option><option value="out_of_stock">Out of Stock</option><option value="maintenance">Maintenance</option></select></label></div>
                 </div>
-                <div><label style="display:block;margin-bottom:4px;margin-top:12px"><strong>Description</strong> <textarea id="i_description" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;min-height:80px"></textarea></label></div>
-                <div style="margin-top:12px;display:flex;gap:8px"><button type="submit" style="padding:8px 16px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer">Save</button> <button type="button" id="cancelItem" style="padding:8px 16px;background:#6c757d;color:#fff;border:none;border-radius:4px;cursor:pointer">Cancel</button></div>
-                <div id="itemMessage" style="color:#b45309;margin-top:8px"></div>
+                <div class="item-form-field"><label><span>Description</span><textarea id="i_description"></textarea></label></div>
+                <div class="item-form-actions">
+                    <button type="submit" class="item-primary-btn">Save</button>
+                    <button type="button" id="cancelItem" class="item-secondary-btn">Cancel</button>
+                </div>
+                <div id="itemMessage"></div>
             </form>
         </div>
     </div>
