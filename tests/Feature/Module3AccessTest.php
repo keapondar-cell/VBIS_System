@@ -63,13 +63,19 @@ class Module3AccessTest extends TestCase
             ->assertSee('Borrowing')
             ->assertSee('Material Issuance')
             ->assertSee('Transactions')
-            ->assertSee('Consumables')
+            ->assertDontSee('>Consumables</a>', false)
             ->assertDontSee('>Requests</a>', false)
             ->assertSee(route('inventory.borrowing.list'), false)
-            ->assertSee(route('inventory.consumables.list'), false)
             ->assertSee(route('inventory.issues.list'), false)
             ->assertSee(route('inventory.transactions.list'), false)
             ->assertDontSee(route('inventory.transactions.history'), false);
+
+        $this->get(route('inventory.items.list'))
+            ->assertOk()
+            ->assertSee('aria-label="Inventory sections"', false)
+            ->assertSee(route('inventory.consumables.list'), false)
+            ->assertSee('Inventory Items')
+            ->assertSee('>Consumables</a>', false);
 
         $this->get(route('inventory.borrowing.list'))
             ->assertOk()
@@ -198,7 +204,7 @@ class Module3AccessTest extends TestCase
     public function test_teacher_can_scan_an_item_qr_to_return_an_active_borrow(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
-        $item = Item::factory()->create(['quantity' => 7]);
+        $item = Item::factory()->create(['quantity' => 7, 'usage_type' => 'issuance_only']);
         InventoryTransaction::factory()->create([
             'item_id' => $item->id,
             'user_id' => $teacher->id,
@@ -215,6 +221,7 @@ class Module3AccessTest extends TestCase
             ->assertSee('Item Details')
             ->assertSee('Recent History')
             ->assertSee('What would you like to do?')
+            ->assertDontSee('Borrow this item')
             ->assertDontSee('Scan Again')
             ->assertSee('Confirm Return');
 

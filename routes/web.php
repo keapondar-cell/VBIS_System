@@ -77,6 +77,7 @@ Route::prefix('inventory')->middleware('auth')->name('inventory.')->group(functi
     Route::delete('items/{id}', [InventoryMonitoringController::class, 'destroy'])->name('items.destroy');
     Route::get('items/list', [InventoryMonitoringController::class, 'itemsView'])->name('items.list');
     Route::get('consumables', [InventoryMonitoringController::class, 'consumablesView'])->name('consumables.list');
+    Route::get('item-usage', [InventoryMonitoringController::class, 'itemUsageView'])->name('item_usage.list');
     Route::get('items/export', [InventoryMonitoringController::class, 'exportItems'])->name('items.export');
     Route::get('items/search', [InventoryMonitoringController::class, 'search'])->name('items.search');
     Route::get('items/{id}', [InventoryMonitoringController::class, 'show'])->name('items.show');

@@ -112,7 +112,42 @@ class InventoryMonitoringTest extends TestCase
             ->assertSee($caseVariant->name)
             ->assertDontSee('Lab Beaker')
             ->assertSee('Classification: Consumable')
+            ->assertSee(route('inventory.items.list'), false)
+            ->assertSee('aria-current="page" >Consumables', false);
+    }
+
+    public function test_item_usage_identifier_subwindow_lists_and_filters_usage_types_without_transactions(): void
+    {
+        $issueOnly = Item::factory()->create([
+            'name' => 'Printer Paper',
+            'category' => 'Consumable',
+            'usage_type' => 'issuance_only',
+        ]);
+        Item::factory()->create([
+            'name' => 'Projector',
+            'category' => 'Equipment',
+            'usage_type' => 'borrowing_only',
+        ]);
+        Item::factory()->create([
+            'name' => 'Lab Kit',
+            'category' => 'Equipment',
+            'usage_type' => 'both',
+        ]);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('inventory.item_usage.list', ['usage_type' => 'issuance_only']))
+            ->assertOk()
+            ->assertSee('Item Usage Identifiers')
+            ->assertSee('This identifier describes how an item may be used.')
+            ->assertSee('Printer Paper')
+            ->assertSee('Material issuance only')
+            ->assertDontSee('Projector')
+            ->assertDontSee('Lab Kit')
+            ->assertSee('aria-current="page" >Usage Identifier', false)
             ->assertSee(route('inventory.consumables.list'), false);
+
+        $this->assertDatabaseMissing('inventory_transactions', ['item_id' => $issueOnly->id]);
+        $this->assertDatabaseMissing('material_issues', ['item_id' => $issueOnly->id]);
     }
 
     public function test_inventory_items_low_stock_link_filters_items_and_keeps_anchor_targets(): void

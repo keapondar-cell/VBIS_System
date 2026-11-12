@@ -23,6 +23,7 @@ class ItemFactory extends Factory
             'location' => fake()->word(),
             'status' => 'available',
             'qr_code' => null,
+            'usage_type' => 'both',
         ];
     }
 }

@@ -9,8 +9,10 @@
     <style>
         body { margin: 0; font-family: Arial, sans-serif; }
         .legacy-module-page { background: radial-gradient(circle at 100% 0, rgba(47,154,145,.12), transparent 28rem), linear-gradient(135deg, #f4f8f8 0%, #e8f1f2 100%); }
-        .legacy-module-page > h1 { position: relative; display: inline-block; margin-bottom: 1.25rem; letter-spacing: .01em; font-weight: 400; }
-        .legacy-module-page > h1::after { content: ""; display: block; width: 3.5rem; height: 4px; margin-top: .45rem; border-radius: 4px; background: #d99b2b; }
+        .inventory-toolbar { margin-bottom:18px; padding:22px; border:1px solid #dce7eb; border-radius:16px; background:rgba(255,255,255,.92); box-shadow:0 10px 28px rgba(18,59,93,.06); }
+        .inventory-page-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+        .inventory-page-heading h1 { margin:0; color:#123b5d; font-size:1.65rem; line-height:1.2; font-weight:750; letter-spacing:-.02em; }
+        .inventory-page-description { margin:6px 0 0; color:#64748b; font-size:.9rem; }
         .legacy-module-page > a { display: inline-block; margin-bottom: 1rem; padding: .45rem .75rem; border-radius: 7px; color: #287f92; background: rgba(255,255,255,.7); text-decoration: none; transition: background .2s, color .2s; }
         .legacy-module-page > a:hover { color: #123b5d; background: #fff; }
         .items-table-wrap { overflow-x:auto; border:1px solid #d8e5e8; border-radius:14px; background:rgba(255,255,255,.9); box-shadow:0 16px 40px rgba(18,59,93,.08); }
@@ -46,13 +48,24 @@
         .legacy-module-page td:last-child button.delete-item-btn { background:#dc2626 !important; }
         .legacy-module-page td:last-child button.delete-item-btn:hover { background:#b91c1c !important; }
         .legacy-module-page td:last-child { white-space: nowrap; }
-        .items-search { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 16px; }
-        .items-search input { min-width:280px; flex:1; max-width:560px; padding:9px 12px; border:1px solid #b9d0d5; border-radius:7px; background:#fff; }
-        .items-search select { min-width:160px; padding:9px 12px; border:1px solid #b9d0d5; border-radius:7px; background:#fff; }
-        .items-search input:focus { outline:none; border-color:#287f92; box-shadow:0 0 0 3px rgba(47,154,145,.16); }
-        .items-search select:focus { outline:none; border-color:#287f92; box-shadow:0 0 0 3px rgba(47,154,145,.16); }
-        .items-search button, .items-search a { display:inline-flex; align-items:center; gap:6px; padding:9px 13px; border:0; border-radius:7px; color:#fff; background:#0d67d8; text-decoration:none; cursor:pointer; }
-        .items-search a { background:#64748b; }
+        .inventory-add-button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:42px; margin:0 !important; padding:9px 16px !important; border:0; border-radius:9px; color:#fff; background:#0d67d8; font-size:.9rem; font-weight:700; white-space:nowrap; box-shadow:0 4px 10px rgba(13,103,216,.16); }
+        .inventory-add-button:hover { background:#0958bb !important; }
+        .inventory-tabs { display:flex; gap:5px; width:max-content; max-width:100%; margin-top:20px; padding:4px; overflow-x:auto; border:1px solid #e2e8f0; border-radius:11px; background:#f3f7f8; }
+        .inventory-tab { display:inline-flex; align-items:center; justify-content:center; min-height:36px; padding:8px 13px; border-radius:8px; color:#526b7a; font-size:13px; font-weight:650; text-decoration:none; white-space:nowrap; }
+        .inventory-tab:hover { color:#123b5d; background:#e8f4f3; }
+        .inventory-tab[aria-current="page"] { color:#123b5d; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.12); }
+        .usage-identifier-note { margin:14px 0 0; padding:10px 12px; border-left:3px solid #287f92; border-radius:6px; background:#f0f8f7; color:#526b7a; font-size:.85rem; }
+        .items-search-panel { width:100%; min-width:0; box-sizing:border-box; margin-bottom:18px; padding:16px; border:1px solid #dce7eb; border-radius:14px; background:rgba(255,255,255,.9); }
+        .items-search { display:grid; width:100%; min-width:0; box-sizing:border-box; grid-template-columns:minmax(0,2fr) repeat(4,minmax(0,1fr)) auto; gap:10px; align-items:center; margin:0; }
+        .items-search input, .items-search select { width:100%; min-width:0; max-width:100%; min-height:42px; box-sizing:border-box; padding:9px 11px; border:1px solid #cbd9df; border-radius:8px; background:#fff; color:#263b4d; font-size:.88rem; }
+        .items-search input::placeholder { color:#82909d; }
+        .items-search input:focus, .items-search select:focus { outline:none; border-color:#287f92; box-shadow:0 0 0 3px rgba(47,154,145,.14); }
+        .items-search > span { display:inline-flex; align-items:center; min-height:40px; padding:0 11px; border-radius:8px; background:#ecfdf5; color:#047857; font-size:.82rem; font-weight:650; white-space:nowrap; }
+        .items-search-actions { display:flex; min-width:0; align-items:center; gap:8px; }
+        .items-search button, .items-search a { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:42px; padding:9px 13px; border:0; border-radius:8px; color:#fff; background:#0d67d8; font-size:.88rem; font-weight:650; text-decoration:none; cursor:pointer; white-space:nowrap; }
+        .items-search button:hover { background:#0958bb; }
+        .items-search a { border:1px solid #cbd9df; color:#526b7a; background:#fff; }
+        .items-search a:hover { background:#f3f7f8; }
         .pagination { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:12px; }
         .pagination a, .pagination span { display:inline-flex; align-items:center; justify-content:center; min-width:32px; height:32px; padding:0 10px; border-radius:6px; border:1px solid #d8e5e8; background:#fff; color:#123b5d; text-decoration:none; font-size:12px; }
         .pagination a:hover { background:#edf6f5; }
@@ -177,8 +190,23 @@
             font-weight:600;
             color:#b45309;
         }
-        @media (max-width: 700px) {
-            .legacy-module-page { padding: 1rem; }
+        @media (max-width: 1100px) {
+            .items-search { grid-template-columns:repeat(3,minmax(0,1fr)); }
+            .items-search input, .items-search > span, .items-search-actions { grid-column:1 / -1; }
+        }
+        @media (max-width: 640px) {
+            .legacy-module-page { padding: 1rem .75rem; }
+            .inventory-toolbar { padding:16px 14px; }
+            .inventory-page-heading { align-items:center; }
+            .inventory-page-heading h1 { font-size:1.35rem; }
+            .inventory-page-description { font-size:.82rem; }
+            .inventory-add-button { min-height:40px; padding:8px 11px !important; font-size:.82rem; }
+            .inventory-tabs { width:100%; }
+            .inventory-tab { flex:1; padding:8px 9px; font-size:.77rem; }
+            .items-search-panel { padding:12px; }
+            .items-search { grid-template-columns:minmax(0,1fr); gap:9px; }
+            .items-search input, .items-search select, .items-search > span, .items-search-actions { grid-column:1; width:100%; }
+            .items-search-actions > * { flex:1; }
             .items-table { min-width:1050px; }
             .item-form-grid { grid-template-columns:1fr; }
             .item-modal-panel { padding:20px 18px; }
@@ -187,6 +215,10 @@
             .item-primary-btn,
             .item-secondary-btn { width:100%; }
         }
+        @media (max-width: 380px) {
+            .inventory-page-heading { align-items:stretch; flex-direction:column; }
+            .inventory-add-button { width:100%; }
+        }
     </style>
 </head>
 <body class="school-page min-h-screen lg:flex">
@@ -194,12 +226,28 @@
 
     <main class="school-content flex-1 min-w-0">
         <div class="legacy-module-page">
-            <h1>{{ !empty($consumablesOnly) ? 'Consumables Inventory' : 'Inventory Items' }}</h1>
-            @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
-                <button id="newItem" style="margin-left:12px"><span aria-hidden="true">＋</span> Add New Item</button>
-            @endif
-            <form method="GET" action="{{ !empty($consumablesOnly) ? route('inventory.consumables.list') : route('inventory.items.list') }}" class="items-search">
-                <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by item name, SKU, classification, or department" aria-label="Search inventory items">
+            <section class="inventory-toolbar" aria-label="Inventory navigation">
+                <div class="inventory-page-heading">
+                    <div>
+                        <h1>{{ !empty($usageIdentifiersOnly) ? 'Item Usage Identifiers' : (!empty($consumablesOnly) ? 'Consumables Inventory' : 'Inventory Items') }}</h1>
+                        <p class="inventory-page-description">{{ !empty($usageIdentifiersOnly) ? 'Review how each item is allowed to be used.' : (!empty($consumablesOnly) ? 'Track consumable supplies and their stock levels.' : 'Manage items, stock levels, and usage classifications.') }}</p>
+                    </div>
+                    @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
+                        <button id="newItem" class="inventory-add-button"><span aria-hidden="true">＋</span> Add New Item</button>
+                    @endif
+                </div>
+                <nav class="inventory-tabs" aria-label="Inventory sections">
+                    <a class="inventory-tab" href="{{ route('inventory.items.list') }}" @if(empty($consumablesOnly) && empty($usageIdentifiersOnly)) aria-current="page" @endif>Inventory Items</a>
+                    <a class="inventory-tab" href="{{ route('inventory.consumables.list') }}" @if(!empty($consumablesOnly)) aria-current="page" @endif>Consumables</a>
+                    <a class="inventory-tab" href="{{ route('inventory.item_usage.list') }}" @if(!empty($usageIdentifiersOnly)) aria-current="page" @endif>Usage Identifier</a>
+                </nav>
+                @if(!empty($usageIdentifiersOnly))
+                    <p class="usage-identifier-note">This identifier describes how an item may be used. It does not create or record an issuance or borrowing transaction.</p>
+                @endif
+            </section>
+            <section class="items-search-panel" aria-label="Search and filter inventory">
+            <form method="GET" action="{{ !empty($usageIdentifiersOnly) ? route('inventory.item_usage.list') : (!empty($consumablesOnly) ? route('inventory.consumables.list') : route('inventory.items.list')) }}" class="items-search">
+                <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by item, SKU, or classification" aria-label="Search inventory items">
                 @if(!empty($consumablesOnly))
                     <span class="px-3 py-2 rounded-md bg-emerald-50 text-emerald-800">Classification: Consumable</span>
                 @else
@@ -208,6 +256,14 @@
                         @foreach($classifications as $classification)
                             <option value="{{ $classification }}" @selected(request('classification') === $classification)>{{ $classification }}</option>
                         @endforeach
+                    </select>
+                @endif
+                @if(!empty($usageIdentifiersOnly))
+                    <select name="usage_type" aria-label="Filter by item usage">
+                        <option value="">All Usage Types</option>
+                        <option value="issuance_only" @selected(request('usage_type') === 'issuance_only')>Material issuance only</option>
+                        <option value="borrowing_only" @selected(request('usage_type') === 'borrowing_only')>Borrowing only</option>
+                        <option value="both" @selected(request('usage_type') === 'both')>Material issuance and borrowing</option>
                     </select>
                 @endif
                 <select name="location" aria-label="Filter by department">
@@ -222,19 +278,29 @@
                     <option value="low_stock" @selected(request('stock_status') === 'low_stock')>Low stock</option>
                     <option value="out_of_stock" @selected(request('stock_status') === 'out_of_stock')>Out of stock</option>
                 </select>
-                <button type="submit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>Search</button>
-                @if(request()->hasAny(['search', 'classification', 'location', 'stock_status', 'low_stock']))<a href="{{ !empty($consumablesOnly) ? route('inventory.consumables.list') : route('inventory.items.list') }}">Clear</a>@endif
+                <div class="items-search-actions">
+                    <button type="submit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>Search</button>
+                    @if(request()->hasAny(['search', 'classification', 'usage_type', 'location', 'stock_status', 'low_stock']))<a href="{{ !empty($usageIdentifiersOnly) ? route('inventory.item_usage.list') : (!empty($consumablesOnly) ? route('inventory.consumables.list') : route('inventory.items.list')) }}">Clear</a>@endif
+                </div>
             </form>
+            </section>
             <div class="items-table-wrap">
             <table class="items-table" aria-label="Inventory items">
                 <thead>
-                    <tr><th>Name</th><th>Classification</th><th>Qty</th><th>Department</th><th>Status</th><th>Date Added</th><th>QR</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Classification</th><th>Allowed Use</th><th>Qty</th><th>Department</th><th>Status</th><th>Date Added</th><th>QR</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 @foreach($items as $item)
                     <tr id="item-{{ $item->id }}">
                         <td>{{ $item->name }}</td>
                         <td>{{ $item->classification ?? $item->category ?? 'N/A' }}</td>
+                        <td>
+                            @switch($item->usage_type)
+                                @case('issuance_only') Material issuance only @break
+                                @case('borrowing_only') Borrowing only @break
+                                @default Material issuance and borrowing
+                            @endswitch
+                        </td>
                         <td>{{ $item->quantity }}</td>
                         <td>{{ $item->location }}</td>
                         @php
@@ -247,7 +313,7 @@
                         @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isPropertyCustodian()))
                         <td>
                             <div class="item-actions">
-                                <button type="button" class="item-action-btn edit-item-btn" aria-label="Edit {{ $item->name }}" title="Edit item" onclick="editItem({{ $item->id }}, '{{ addslashes($item->name) }}', {{ (int)$item->quantity }}, '{{ addslashes($item->location) }}')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button>
+                                <button type="button" class="item-action-btn edit-item-btn" aria-label="Edit {{ $item->name }}" title="Edit item" onclick="editItem({{ $item->id }}, '{{ addslashes($item->name) }}', {{ (int)$item->quantity }}, '{{ addslashes($item->location) }}', @js($item->usage_type))"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button>
                                 <button type="button" class="item-action-btn delete-item-btn" aria-label="Delete {{ $item->name }}" title="Delete item" onclick="deleteItem({{ $item->id }})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></svg></button>
                             </div>
                         </td>
@@ -293,6 +359,7 @@
                     <div class="item-form-field"><label><span>Name</span><input id="i_name" required></label></div>
                     <div class="item-form-field"><label><span>SKU</span><input id="i_sku"></label></div>
                     <div class="item-form-field"><label><span>Classification</span><input id="i_classification" list="classificationOptions" placeholder="Consumable, Glassware, etc."></label><datalist id="classificationOptions"><option value="Consumable"><option value="Glassware"><option value="Chemical"><option value="Equipment"><option value="Office Supply"></datalist></div>
+                    <div class="item-form-field"><label><span>Allowed Use</span><select id="i_usage_type" required><option value="issuance_only">Material issuance only (no return expected)</option><option value="borrowing_only">Borrowing only (return required)</option><option value="both">Material issuance and borrowing</option></select></label></div>
                     <div class="item-form-field"><label><span>Quantity</span><input id="i_quantity" type="number" min="0" value="0"></label></div>
                     <div id="itemCreatedAtField" class="item-form-field"><label><span>Date and Time Added</span><input id="i_created_at" type="datetime-local" value="{{ now(\App\Support\SchoolTime::TIMEZONE)->format('Y-m-d\TH:i') }}" required></label></div>
                     <div class="item-form-field"><label><span>Department</span><select id="i_location"><option value="">Select department</option><option value="Library">Library</option><option value="Computer Lab">Computer Lab</option><option value="Science Lab">Science Lab</option><option value="JHS Department">JHS Department</option><option value="SHS Department">SHS Department</option></select></label></div>
@@ -328,6 +395,7 @@
             document.getElementById('itemCreatedAtField').style.display='';
             document.getElementById('i_created_at').disabled=false;
             ['i_name','i_sku','i_classification','i_quantity','i_description','i_status'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+            document.getElementById('i_usage_type').value='both';
             document.getElementById('itemMessage').textContent='';
             resetDepartmentOptions();
             document.getElementById('i_quantity').value='0';
@@ -345,6 +413,7 @@
             sku: document.getElementById('i_sku').value || null,
             category: classification,
             classification: classification,
+            usage_type: document.getElementById('i_usage_type').value,
             quantity: Number(document.getElementById('i_quantity').value||0), 
             location: document.getElementById('i_location').value,
             description: document.getElementById('i_description').value || null,
@@ -374,7 +443,16 @@
         }
     });
 
-    function editItem(id,name,qty,loc){
+    document.getElementById('i_classification').addEventListener('change', event=>{
+        const usageType = document.getElementById('i_usage_type');
+        if (event.target.value.trim().toLowerCase() === 'consumable') {
+            usageType.value = 'issuance_only';
+        } else if (usageType.value === 'issuance_only') {
+            usageType.value = 'both';
+        }
+    });
+
+    function editItem(id,name,qty,loc,usageType){
         document.getElementById('itemModal').style.display='flex';
         document.getElementById('itemModalTitle').textContent='Edit Item';
         document.getElementById('item_id_field').value = id;
@@ -382,6 +460,7 @@
         document.getElementById('i_created_at').disabled=true;
         document.getElementById('i_name').value = name;
         document.getElementById('i_quantity').value = qty;
+        document.getElementById('i_usage_type').value = usageType || 'both';
         resetDepartmentOptions();
         const departmentSelect = document.getElementById('i_location');
         if (loc && !standardDepartments.includes(loc)) {
@@ -398,6 +477,7 @@
                 document.getElementById('i_classification').value = item.classification || item.category || '';
                 document.getElementById('i_description').value = item.description || '';
                 document.getElementById('i_status').value = item.status || 'available';
+                document.getElementById('i_usage_type').value = item.usage_type || 'both';
             });
     }
 

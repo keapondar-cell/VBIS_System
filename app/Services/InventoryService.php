@@ -16,7 +16,16 @@ class InventoryService
 
     public function issue(int $itemId, int $quantity, array $meta = []): InventoryTransaction
     {
-        return $this->applyMovement($itemId, 'issue', -$quantity, $meta);
+        return DB::transaction(function () use ($itemId, $quantity, $meta) {
+            $item = Item::lockForUpdate()->findOrFail($itemId);
+            if (! $item->allowsMaterialIssuance()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'item_id' => 'This item is not available for material issuance.',
+                ]);
+            }
+
+            return $this->applyMovement($itemId, 'issue', -$quantity, $meta);
+        });
     }
 
     public function borrow(int $itemId, int $quantity, array $meta = []): InventoryTransaction
@@ -25,6 +34,11 @@ class InventoryService
 
         return DB::transaction(function () use ($itemId, $quantity, $meta, $userId) {
             $item = Item::lockForUpdate()->findOrFail($itemId);
+            if (! $item->allowsBorrowing()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'item_id' => 'This item is not available for borrowing.',
+                ]);
+            }
             $existingPending = InventoryTransaction::query()
                 ->where('item_id', $itemId)
                 ->where('user_id', $userId)
@@ -84,6 +98,11 @@ class InventoryService
             }
 
             $item = Item::lockForUpdate()->findOrFail($transaction->item_id);
+            if (! $item->allowsBorrowing()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'item_id' => 'This item is no longer available for borrowing.',
+                ]);
+            }
             $oldQuantity = (int) $item->quantity;
             $quantity = (int) $transaction->quantity;
 

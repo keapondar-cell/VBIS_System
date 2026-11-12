@@ -11,7 +11,7 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
-        'sku', 'name', 'description', 'category', 'quantity', 'location', 'status', 'qr_code'
+        'sku', 'name', 'description', 'category', 'quantity', 'location', 'status', 'qr_code', 'usage_type'
     ];
 
     protected $appends = ['classification'];
@@ -20,6 +20,7 @@ class Item extends Model
     {
         static::creating(function (Item $item): void {
             $item->qr_code ??= 'VBIS-'.Str::upper(Str::random(16));
+            $item->usage_type ??= $item->isConsumable() ? 'issuance_only' : 'both';
         });
     }
 
@@ -36,6 +37,16 @@ class Item extends Model
     public function isConsumable(): bool
     {
         return strtolower(trim((string) $this->category)) === 'consumable';
+    }
+
+    public function allowsMaterialIssuance(): bool
+    {
+        return in_array($this->usage_type, ['issuance_only', 'both'], true);
+    }
+
+    public function allowsBorrowing(): bool
+    {
+        return in_array($this->usage_type, ['borrowing_only', 'both'], true);
     }
 
     public function transactions()

@@ -133,7 +133,7 @@ class InventoryHistoryController extends Controller
         $user = $request->user();
         $transactionType = strtolower((string) $request->input('transaction_type'));
         $item = $transactionType === 'issue' ? Item::find($request->input('item_id')) : null;
-        if ($item?->isConsumable()) {
+        if ($item && ! $item->allowsBorrowing()) {
             $request->merge(['expected_return_at' => null]);
         }
         $expectedReturnIsFuture = SchoolTime::isFutureInput($request->input('expected_return_at'));
@@ -213,6 +213,14 @@ class InventoryHistoryController extends Controller
             $data['condition'] = $data['condition'] ?? 'Good';
         } else {
             $data['status'] = 'approved';
+        }
+
+        $item = Item::findOrFail($data['item_id']);
+        if ($transactionType === 'borrow' && ! $item->allowsBorrowing()) {
+            return response()->json(['error' => 'This item is not available for borrowing.'], 422);
+        }
+        if ($transactionType === 'issue' && ! $item->allowsMaterialIssuance()) {
+            return response()->json(['error' => 'This item is not available for material issuance.'], 422);
         }
 
         return \DB::transaction(function () use ($data, $transactionType, $request) {
@@ -355,8 +363,12 @@ class InventoryHistoryController extends Controller
 
     private function renderTransactionsView(bool $borrowingOnly)
     {
+        $itemsQuery = Item::query()
+            ->when($borrowingOnly, fn ($query) => $query->whereIn('usage_type', ['borrowing_only', 'both']))
+            ->orderBy('name');
+
         return view('inventory.transactions', [
-            'items' => Item::orderBy('name')->get(['id', 'name', 'category', 'quantity']),
+            'items' => $itemsQuery->get(['id', 'name', 'category', 'quantity', 'usage_type']),
             'users' => User::orderBy('name')->get(),
             'departments' => Department::where('is_active', true)->orderBy('name')->get(),
             'borrowingOnly' => $borrowingOnly,

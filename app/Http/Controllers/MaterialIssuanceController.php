@@ -37,7 +37,7 @@ class MaterialIssuanceController extends Controller
     {
         $user = $request->user();
         $item = Item::find($request->input('item_id'));
-        if ($item?->isConsumable()) {
+        if ($item && ! $item->allowsBorrowing()) {
             $request->merge(['expected_return_at' => null]);
         }
         $expectedReturnIsFuture = SchoolTime::isFutureInput($request->input('expected_return_at'));
@@ -75,6 +75,10 @@ class MaterialIssuanceController extends Controller
             'purpose' => 'required|string|min:5|max:500',
         ]);
 
+        if (! $item || ! $item->allowsMaterialIssuance()) {
+            return response()->json(['error' => 'This item is not available for material issuance.'], 422);
+        }
+
         $data['notes'] = $data['purpose'];
         unset($data['purpose']);
 
@@ -97,6 +101,11 @@ class MaterialIssuanceController extends Controller
 
         $issue = DB::transaction(function () use ($data) {
             $item = Item::lockForUpdate()->findOrFail($data['item_id']);
+            if (! $item->allowsMaterialIssuance()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'item_id' => 'This item is no longer available for material issuance.',
+                ]);
+            }
             if ($item->quantity <= 0) {
                 return null;
             }
@@ -141,8 +150,16 @@ class MaterialIssuanceController extends Controller
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
+        if ((int) $issue->issued_to_user_id === (int) $request->user()->id) {
+            return response()->json(['error' => 'You cannot approve your own material request.'], 403);
+        }
+
         return DB::transaction(function () use ($issue, $request) {
             $item = Item::lockForUpdate()->findOrFail($issue->item_id);
+
+            if (! $item->allowsMaterialIssuance()) {
+                return response()->json(['error' => 'This item is no longer available for material issuance.'], 422);
+            }
 
             if ($item->quantity < $issue->quantity) {
                 return response()->json(['error' => 'Insufficient stock'], 422);
@@ -189,6 +206,10 @@ class MaterialIssuanceController extends Controller
 
         if (! $request->user() || ! ($request->user()->isAdmin() || $request->user()->isApprover() || $request->user()->isPropertyCustodian())) {
             return response()->json(['error' => 'Forbidden'], 403);
+        }
+
+        if ((int) $issue->issued_to_user_id === (int) $request->user()->id) {
+            return response()->json(['error' => 'You cannot reject your own material request.'], 403);
         }
 
         $request->merge(['reason' => $request->input('reason', $request->input('notes'))]);
@@ -267,8 +288,12 @@ class MaterialIssuanceController extends Controller
             ->orderByRaw("CASE name WHEN 'Library' THEN 1 WHEN 'Computer Lab' THEN 2 WHEN 'Science Lab' THEN 3 WHEN 'JHS Department' THEN 4 WHEN 'SHS Department' THEN 5 ELSE 6 END")
             ->get();
         $users = User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']);
+        $issuanceItems = Item::query()
+            ->whereIn('usage_type', ['issuance_only', 'both'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'sku', 'quantity', 'usage_type']);
 
-        return view('inventory.issues', compact('departments', 'users'));
+        return view('inventory.issues', compact('departments', 'users', 'issuanceItems'));
     }
 
     public function update(Request $request, $id)
@@ -289,7 +314,7 @@ class MaterialIssuanceController extends Controller
         }
 
         $item = Item::find($request->input('item_id'));
-        if ($item?->isConsumable()) {
+        if ($item && ! $item->allowsBorrowing()) {
             $request->merge(['expected_return_at' => null]);
         }
         $expectedReturnIsFuture = SchoolTime::isFutureInput($request->input('expected_return_at'));
@@ -315,8 +340,18 @@ class MaterialIssuanceController extends Controller
             ],
         ]);
 
+        $requestedItem = Item::findOrFail($data['item_id']);
+        if (! $requestedItem->allowsMaterialIssuance()) {
+            return response()->json(['error' => 'This item is not available for material issuance.'], 422);
+        }
+
         $updated = DB::transaction(function () use ($issue, $data) {
             $item = Item::lockForUpdate()->findOrFail($data['item_id']);
+            if (! $item->allowsMaterialIssuance()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'item_id' => 'This item is no longer available for material issuance.',
+                ]);
+            }
             if ($item->quantity <= 0) {
                 return false;
             }

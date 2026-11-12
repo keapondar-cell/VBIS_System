@@ -82,15 +82,47 @@ class MaterialIssuanceTest extends TestCase
         $this->assertSame($item->id, $issue->fresh()->item_id);
     }
 
+    public function test_teacher_cannot_edit_pending_issue_to_a_borrowing_only_item(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $item = Item::factory()->create(['usage_type' => 'both']);
+        $borrowOnly = Item::factory()->create(['usage_type' => 'borrowing_only']);
+        $issue = MaterialIssue::factory()->create([
+            'item_id' => $item->id,
+            'issued_to_user_id' => $teacher->id,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($teacher)
+            ->patchJson('/inventory/issues/'.$issue->id, [
+                'item_id' => $borrowOnly->id,
+                'quantity' => 1,
+                'purpose' => 'Updated classroom purpose',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error', 'This item is not available for material issuance.');
+
+        $this->assertSame($item->id, $issue->fresh()->item_id);
+    }
+
     public function test_material_issue_page_is_separate_from_borrowing(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
         Item::factory()->create(['name' => 'Consumable Materials', 'category' => 'Consumable']);
+        Item::factory()->create(['name' => 'Unavailable Material', 'quantity' => 0]);
+        $borrowOnly = Item::factory()->create([
+            'name' => 'Borrow Only Equipment',
+            'usage_type' => 'borrowing_only',
+        ]);
 
         $this->actingAs($teacher)
             ->get('/inventory/issues/list')
             ->assertOk()
             ->assertSee('Material Issue')
+            ->assertSee('id="ci_item_search"', false)
+            ->assertSee('Select item')
+            ->assertSee('Consumable Materials')
+            ->assertDontSee('Borrow Only Equipment')
             ->assertDontSee('option value="borrow"', false)
             ->assertSee('Computer Lab')
             ->assertSee('Science Lab')
@@ -100,12 +132,13 @@ class MaterialIssuanceTest extends TestCase
             ->assertSee('Requested date & time')
             ->assertSee('Expected Return Date')
             ->assertSee('Out of stock')
-            ->assertSee("selectedItemClassification.trim().toLowerCase() === 'consumable'", false)
+            ->assertSee("selectedItemUsageType === 'issuance_only'", false)
             ->assertSee('type="datetime-local"', false);
 
         $this->getJson('/inventory/items/search?q=Consumable')
             ->assertOk()
-            ->assertJsonPath('0.category', 'Consumable');
+            ->assertJsonPath('0.category', 'Consumable')
+            ->assertJsonPath('0.usage_type', 'both');
     }
 
     public function test_property_custodian_can_select_a_user_for_a_material_issue_request(): void
@@ -193,6 +226,40 @@ class MaterialIssuanceTest extends TestCase
             'item_id' => $item->id,
             'issued_to_user_id' => $teacher->id,
         ]);
+    }
+
+    public function test_material_issuance_search_and_endpoint_exclude_borrowing_only_items(): void
+    {
+        $teacher = User::factory()->create(['role' => 'teacher']);
+        $issuanceItem = Item::factory()->create([
+            'name' => 'Issue Stock',
+            'usage_type' => 'issuance_only',
+        ]);
+        $bothItem = Item::factory()->create([
+            'name' => 'Flexible Stock',
+            'usage_type' => 'both',
+        ]);
+        $borrowItem = Item::factory()->create([
+            'name' => 'Returnable Device',
+            'usage_type' => 'borrowing_only',
+        ]);
+
+        $this->actingAs($teacher)
+            ->getJson('/inventory/items/search?q=Stock&usage=issuance')
+            ->assertOk()
+            ->assertJsonCount(2)
+            ->assertJsonFragment(['id' => $issuanceItem->id, 'usage_type' => 'issuance_only'])
+            ->assertJsonFragment(['id' => $bothItem->id, 'usage_type' => 'both']);
+
+        $this->postJson('/inventory/issues', [
+            'item_id' => $borrowItem->id,
+            'quantity' => 1,
+            'purpose' => 'For classroom activity',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error', 'This item is not available for material issuance.');
+
+        $this->assertDatabaseMissing('material_issues', ['item_id' => $borrowItem->id]);
     }
 
     public function test_admin_can_transfer_an_approved_material_issue_to_another_user_without_changing_stock(): void
@@ -293,7 +360,7 @@ class MaterialIssuanceTest extends TestCase
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
         $admin = User::factory()->create(['role' => 'admin']);
-        $item = Item::factory()->create(['category' => ' consumable ']);
+        $item = Item::factory()->create(['category' => ' consumable ', 'usage_type' => 'issuance_only']);
 
         $response = $this->actingAs($teacher)->postJson('/inventory/issues', [
             'item_id' => $item->id,
@@ -321,7 +388,7 @@ class MaterialIssuanceTest extends TestCase
     public function test_editing_consumable_material_issue_clears_expected_return_date(): void
     {
         $teacher = User::factory()->create(['role' => 'teacher']);
-        $item = Item::factory()->create(['category' => 'Consumable']);
+        $item = Item::factory()->create(['category' => 'Consumable', 'usage_type' => 'issuance_only']);
         $issue = MaterialIssue::factory()->create([
             'item_id' => $item->id,
             'issued_to_user_id' => $teacher->id,
@@ -443,6 +510,38 @@ class MaterialIssuanceTest extends TestCase
 
         $issue = MaterialIssue::find($issueId);
         $this->assertEquals('rejected', $issue->status);
+    }
+
+    public function test_admin_cannot_approve_or_reject_their_own_material_requests(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::factory()->create(['quantity' => 5]);
+        $approvalRequest = MaterialIssue::factory()->create([
+            'item_id' => $item->id,
+            'issued_to_user_id' => $admin->id,
+            'quantity' => 2,
+            'status' => 'pending',
+        ]);
+        $rejectionRequest = MaterialIssue::factory()->create([
+            'item_id' => $item->id,
+            'issued_to_user_id' => $admin->id,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson('/inventory/issues/'.$approvalRequest->id.'/approve')
+            ->assertForbidden()
+            ->assertJsonPath('error', 'You cannot approve your own material request.');
+
+        $this->postJson('/inventory/issues/'.$rejectionRequest->id.'/reject', [
+            'reason' => 'Request needs independent review',
+        ])
+            ->assertForbidden()
+            ->assertJsonPath('error', 'You cannot reject your own material request.');
+
+        $this->assertSame('pending', $approvalRequest->fresh()->status);
+        $this->assertSame('pending', $rejectionRequest->fresh()->status);
+        $this->assertSame(5, $item->fresh()->quantity);
     }
 
     public function test_property_custodian_can_view_and_reject_pending_issue_but_cannot_edit_or_delete_it()

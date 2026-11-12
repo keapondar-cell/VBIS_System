@@ -233,7 +233,7 @@
                         <select id="c_item_id" name="item_id" required>
                             <option value="">Select item</option>
                             @foreach($items ?? [] as $item)
-                                <option value="{{ $item->id }}" data-category="{{ $item->category }}" data-quantity="{{ $item->quantity }}" @if(!empty($borrowingOnly) && $item->quantity <= 0) disabled @endif>{{ $item->name }}@if(!empty($borrowingOnly)) — {{ $item->quantity > 0 ? $item->quantity.' available' : 'Out of stock' }}@endif</option>
+                                <option value="{{ $item->id }}" data-category="{{ $item->category }}" data-usage-type="{{ $item->usage_type }}" data-quantity="{{ $item->quantity }}" @if(!empty($borrowingOnly) && $item->quantity <= 0) disabled @endif>{{ $item->name }}@if(!empty($borrowingOnly)) — {{ $item->quantity > 0 ? $item->quantity.' available' : 'Out of stock' }}@endif</option>
                             @endforeach
                         </select>
                     </label>
@@ -328,12 +328,24 @@
         function updateBorrowFields(){
             const isBorrow = createType.value === 'borrow';
             const isIssue = createType.value === 'issue';
-            const selectedItem = document.getElementById('c_item_id').selectedOptions[0];
-            const isConsumableIssue = isIssue
-                && (selectedItem?.dataset.category || '').trim().toLowerCase() === 'consumable';
+            const itemSelect = document.getElementById('c_item_id');
+            const selectedItem = itemSelect.selectedOptions[0];
+            const isIssuanceOnly = isIssue && selectedItem?.dataset.usageType === 'issuance_only';
+            Array.from(itemSelect.options).forEach(option => {
+                if (!option.value) return;
+                const usageType = option.dataset.usageType;
+                const allowed = isBorrow
+                    ? ['borrowing_only', 'both'].includes(usageType)
+                    : isIssue
+                        ? ['issuance_only', 'both'].includes(usageType)
+                        : true;
+                option.hidden = !allowed;
+                option.disabled = !allowed;
+            });
+            if (selectedItem?.disabled) itemSelect.value = '';
             document.getElementById('createPurposeField').hidden = !isBorrow;
             document.getElementById('createRequestedAtField').hidden = !isBorrow && !isIssue;
-            document.getElementById('createExpectedReturnField').hidden = (!isBorrow && !isIssue) || isConsumableIssue;
+            document.getElementById('createExpectedReturnField').hidden = (!isBorrow && !isIssue) || isIssuanceOnly;
             document.getElementById('createExpectedReturnLabel').textContent = isIssue ? 'Expected Return Date' : 'Expected Return';
             const expectedReturnType = isBorrow ? 'datetime-local' : 'date';
             if (expectedReturn.type !== expectedReturnType) {
@@ -349,7 +361,7 @@
             }
             requestedAt.required = isIssue;
             createPurpose.required = isBorrow;
-            if ((!isBorrow && !isIssue) || isConsumableIssue) {
+            if ((!isBorrow && !isIssue) || isIssuanceOnly) {
                 expectedReturn.value = '';
             }
             if (!isBorrow && !isIssue) {

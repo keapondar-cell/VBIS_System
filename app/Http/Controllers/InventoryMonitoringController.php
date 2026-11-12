@@ -265,10 +265,13 @@ class InventoryMonitoringController extends Controller
             return response()->json([]);
         }
 
-        $items = Item::where('name', 'like', "%{$q}%")
-            ->orWhere('sku', 'like', "%{$q}%")
+        $items = Item::where(function ($query) use ($q) {
+            $query->where('name', 'like', "%{$q}%")
+                ->orWhere('sku', 'like', "%{$q}%");
+        })
+            ->when($request->input('usage') === 'issuance', fn ($query) => $query->whereIn('usage_type', ['issuance_only', 'both']))
             ->limit(50)
-            ->get(['id','name','sku','quantity','category']);
+            ->get(['id','name','sku','quantity','category','usage_type']);
 
         return response()->json($items);
     }
@@ -427,9 +430,11 @@ class InventoryMonitoringController extends Controller
         $action = $user && in_array($requestedAction, ['borrow', 'return'], true)
             ? $requestedAction
             : null;
-        $canBorrow = $user && ($user->isTeacher() || $user->isAdmin());
+        $canBorrow = $user && ($user->isTeacher() || $user->isAdmin()) && $item->allowsBorrowing();
         $canManageReturns = $user && ($user->isAdmin() || $user->isPropertyCustodian());
-        $canReturn = $user && ($user->isTeacher() || $user->isAdmin() || $user->isPropertyCustodian());
+        $canReturn = $user
+            && ($user->isTeacher() || $user->isAdmin() || $user->isPropertyCustodian())
+            && ($activeBorrows->isNotEmpty() || $item->allowsBorrowing());
 
         return view('inventory.qr-item-information', compact('item', 'activeBorrows', 'action', 'canBorrow', 'canManageReturns', 'canReturn'));
     }
@@ -801,11 +806,15 @@ class InventoryMonitoringController extends Controller
         return view('inventory.dashboard', ['summary' => $summary]);
     }
 
-    public function itemsView(Request $request, bool $consumablesOnly = false)
+    public function itemsView(Request $request, bool $consumablesOnly = false, bool $usageIdentifiersOnly = false)
     {
         $query = Item::query();
 
-        if ($consumablesOnly) {
+        if ($usageIdentifiersOnly) {
+            if ($request->filled('usage_type')) {
+                $query->where('usage_type', $request->input('usage_type'));
+            }
+        } elseif ($consumablesOnly) {
             $query->whereRaw('LOWER(TRIM(category)) = ?', ['consumable']);
         } else {
             $query->where(function ($itemQuery) {
@@ -828,6 +837,10 @@ class InventoryMonitoringController extends Controller
             $query->where('category', $request->input('classification'));
         }
 
+        if (! $usageIdentifiersOnly && $request->filled('usage_type')) {
+            $query->where('usage_type', $request->input('usage_type'));
+        }
+
         if ($request->filled('location')) {
             $query->where('location', $request->input('location'));
         }
@@ -848,7 +861,7 @@ class InventoryMonitoringController extends Controller
         $classificationsQuery = Item::query()
             ->whereNotNull('category')
             ->where('category', '<>', '')
-            ->when(! $consumablesOnly, fn ($classificationQuery) => $classificationQuery
+            ->when(! $consumablesOnly && ! $usageIdentifiersOnly, fn ($classificationQuery) => $classificationQuery
                 ->whereRaw('LOWER(TRIM(category)) <> ?', ['consumable']));
         $classifications = $classificationsQuery
             ->distinct()
@@ -861,12 +874,17 @@ class InventoryMonitoringController extends Controller
             ->orderBy('location')
             ->pluck('location');
 
-        return view('inventory.items', compact('items', 'classifications', 'locations', 'consumablesOnly'));
+        return view('inventory.items', compact('items', 'classifications', 'locations', 'consumablesOnly', 'usageIdentifiersOnly'));
     }
 
     public function consumablesView(Request $request)
     {
         return $this->itemsView($request, true);
+    }
+
+    public function itemUsageView(Request $request)
+    {
+        return $this->itemsView($request, false, true);
     }
 
     // API: create item
@@ -881,11 +899,15 @@ class InventoryMonitoringController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'category' => 'nullable|string|max:128',
+            'usage_type' => 'sometimes|in:issuance_only,borrowing_only,both',
             'quantity' => 'required|integer|min:0',
             'location' => 'nullable|string|max:128',
             'status' => 'nullable|string|max:32',
             'created_at' => 'nullable|date_format:Y-m-d\TH:i',
         ]);
+        $data['usage_type'] ??= strtolower(trim((string) ($data['category'] ?? ''))) === 'consumable'
+            ? 'issuance_only'
+            : 'both';
 
         $createdAt = $data['created_at'] ?? null;
         unset($data['created_at']);
@@ -927,6 +949,7 @@ class InventoryMonitoringController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'category' => 'nullable|string|max:128',
+            'usage_type' => 'sometimes|in:issuance_only,borrowing_only,both',
             'quantity' => 'nullable|integer|min:0',
             'location' => 'nullable|string|max:128',
             'status' => 'nullable|string|max:32',

@@ -30,7 +30,63 @@ class InventoryAuthorizationTest extends TestCase
         $this->assertDatabaseHas('items', [
             'name' => 'Test Item',
             'location' => 'Science Lab',
+            'usage_type' => 'both',
         ]);
+    }
+
+    public function test_item_usage_identifier_can_be_created_and_updated_without_creating_transactions(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $itemResponse = $this->actingAs($admin)
+            ->postJson(route('inventory.items.store'), [
+                'name' => 'Nitrile Gloves',
+                'category' => 'Consumable',
+                'quantity' => 12,
+                'usage_type' => 'issuance_only',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('usage_type', 'issuance_only');
+
+        $itemId = $itemResponse->json('id');
+
+        $this->assertDatabaseHas('items', [
+            'id' => $itemId,
+            'usage_type' => 'issuance_only',
+        ]);
+        $this->assertDatabaseMissing('inventory_transactions', ['item_id' => $itemId, 'transaction_type' => 'borrow']);
+        $this->assertDatabaseMissing('material_issues', ['item_id' => $itemId]);
+
+        $this->putJson(route('inventory.items.update', $itemId), [
+            'name' => 'Nitrile Gloves',
+            'usage_type' => 'borrowing_only',
+        ])
+            ->assertOk()
+            ->assertJsonPath('usage_type', 'borrowing_only');
+
+        $this->assertDatabaseHas('items', [
+            'id' => $itemId,
+            'usage_type' => 'borrowing_only',
+        ]);
+
+        $this->putJson(route('inventory.items.update', $itemId), [
+            'name' => 'Nitrile Gloves',
+            'usage_type' => 'not-a-usage-type',
+        ])->assertUnprocessable();
+    }
+
+    public function test_consumable_items_default_to_material_issuance_only(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->postJson(route('inventory.items.store'), [
+                'name' => 'Lab Wipes',
+                'category' => ' consumable ',
+                'quantity' => 8,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('usage_type', 'issuance_only');
     }
 
     public function test_item_creation_uses_the_selected_philippines_date_and_time(): void
@@ -77,6 +133,10 @@ class InventoryAuthorizationTest extends TestCase
             ->assertDontSee('Item ID:')
             ->assertSee('Desk Lamp')
             ->assertSee('<select id="i_location"', false)
+            ->assertSee('<select id="i_usage_type" required', false)
+            ->assertSee('Material issuance only (no return expected)')
+            ->assertSee('Borrowing only (return required)')
+            ->assertSee('Material issuance and borrowing')
             ->assertSee('<option value="Library">Library</option>', false)
             ->assertSee('<option value="Computer Lab">Computer Lab</option>', false)
             ->assertSee('<option value="Science Lab">Science Lab</option>', false)
@@ -117,6 +177,29 @@ class InventoryAuthorizationTest extends TestCase
             'quantity' => 1,
             'status' => 'pending',
             'notes' => 'For office use',
+        ]);
+    }
+
+    public function test_material_issue_approval_rechecks_item_usage_identifier(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::factory()->create(['usage_type' => 'borrowing_only']);
+        $issue = \App\Models\MaterialIssue::factory()->create([
+            'item_id' => $item->id,
+            'status' => 'pending',
+        ]);
+        $originalQuantity = $item->quantity;
+
+        $this->actingAs($admin)
+            ->postJson(route('inventory.issues.approve', $issue->id))
+            ->assertUnprocessable()
+            ->assertJsonPath('error', 'This item is no longer available for material issuance.');
+
+        $this->assertSame($originalQuantity, $item->fresh()->quantity);
+        $this->assertSame('pending', $issue->fresh()->status);
+        $this->assertDatabaseMissing('inventory_transactions', [
+            'item_id' => $item->id,
+            'transaction_type' => 'issue',
         ]);
     }
 

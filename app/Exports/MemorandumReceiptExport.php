@@ -150,14 +150,21 @@ class MemorandumReceiptExport
         $section->addText('Remarks: ____________________________________________________________________________________', null, ['spaceAfter' => 300]);
 
         $signatures = $section->addTable(['borderSize' => 0, 'cellMargin' => 80]);
-        $signatures->addRow(1200);
-        $signatures->addCell(3500)->addText('__________________________________', null, $center);
-        $signatures->addCell(3500)->addText('__________________________________', null, $center);
-        $signatures->addCell(3500)->addText('__________________________________', null, $center);
         $signatures->addRow();
-        $signatures->addCell(3500)->addText(($transaction->user?->name ?? '')."\nSignature over Printed Name\nof Accountable Officer", null, $center);
-        $signatures->addCell(3500)->addText(($transaction->user?->role ? ucwords(str_replace('_', ' ', $transaction->user->role)) : '')."\nPosition/Designation", null, $center);
-        $signatures->addCell(3500)->addText(SchoolTime::format($transaction->requested_for_at ?? $transaction->created_at, 'n/j/Y')."\nDate", null, $center);
+        $nameCell = $signatures->addCell(3500);
+        $nameCell->addText($transaction->user?->name ?? '', null, $center);
+        $nameCell->addText('__________________________________', null, $center);
+        $nameCell->addText('Signature over Printed Name of Accountable Officer', null, $center);
+
+        $positionCell = $signatures->addCell(3500);
+        $positionCell->addText($transaction->user?->role ? ucwords(str_replace('_', ' ', $transaction->user->role)) : '', null, $center);
+        $positionCell->addText('__________________________________', null, $center);
+        $positionCell->addText('Position/Designation', null, $center);
+
+        $dateCell = $signatures->addCell(3500);
+        $dateCell->addText(SchoolTime::format($transaction->requested_for_at ?? $transaction->created_at, 'n/j/Y'), null, $center);
+        $dateCell->addText('__________________________________', null, $center);
+        $dateCell->addText('Date', null, $center);
 
         $approvals = $section->addTable(['borderSize' => 0, 'cellMargin' => 80]);
         $approvals->addRow();

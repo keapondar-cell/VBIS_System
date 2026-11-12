@@ -30,9 +30,14 @@
             <div class="surface">
                 <h3>Request Material</h3>
                 <form id="createIssueForm" class="form-grid" style="position:relative">
-                    <input id="ci_item_search" type="text" placeholder="Search item by name or SKU" autocomplete="off" style="min-width:220px;padding:6px">
-                    <input type="hidden" id="ci_item" name="item_id">
-                    <div id="ci_suggestions" style="position:absolute;left:8px;top:62px;background:#fff;border:1px solid #ddd;max-height:220px;overflow:auto;display:none;z-index:60;width:360px;border-radius:4px"></div>
+                    <select id="ci_item_search" aria-label="Select item" required style="min-width:220px;padding:10px">
+                        <option value="">Select item</option>
+                        @foreach($issuanceItems as $item)
+                            <option value="{{ $item->id }}" data-usage-type="{{ $item->usage_type }}" data-quantity="{{ $item->quantity }}" @disabled($item->quantity <= 0)>
+                                {{ $item->name }}{{ $item->sku ? ' ('.$item->sku.')' : '' }} — {{ $item->quantity > 0 ? 'Available: '.$item->quantity : 'Out of stock' }}
+                            </option>
+                        @endforeach
+                    </select>
                     <input id="ci_qty" type="number" min="1" value="1" style="width:80px;padding:6px">
                     <input id="ci_purpose" type="text" placeholder="Purpose / reason for request" required style="min-width:260px;padding:6px">
                     <div>
@@ -172,7 +177,7 @@
                 html += `<tr><td>${i.id}</td><td>${itemName}</td><td>${i.quantity}</td><td>${escapeHtml(purpose)}</td><td>${avatar ? `<img src="${escapeHtml(avatar)}" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;vertical-align:middle">` : ''}${escapeHtml(issuer)}</td><td>${departmentName}</td><td>${requestedFor}</td><td>${expectedReturn}</td><td><span class="status ${escapeHtml(i.status)}">${escapeHtml(i.status)}</span></td><td>${escapeHtml(formatManilaDateTime(i.created_at))}</td><td class="actions">`;
                 if(i.status === 'pending' && currentUserId === i.issued_to_user_id && !canApprove){ html += `<button class="btn warning edit-issue-button" data-id="${i.id}" data-item-id="${i.item_id}" data-quantity="${i.quantity}" data-purpose="${escapeHtml(i.notes || '')}" data-department-id="${i.department_id || ''}" data-requested-for-at="${escapeHtml(i.requested_for_at || '')}" data-expected-return-at="${escapeHtml(i.expected_return_at || '')}">Edit</button>`; }
                 if(i.status==='pending'){
-                    if(canApprove){ html += ` <button class="btn" onclick="approveIssue(${i.id})">Approve</button> <button class="btn danger" onclick="rejectIssue(${i.id})">Reject</button>`; }
+                    if(canApprove && Number(currentUserId) !== Number(i.issued_to_user_id)){ html += ` <button class="btn" onclick="approveIssue(${i.id})">Approve</button> <button class="btn danger" onclick="rejectIssue(${i.id})">Reject</button>`; }
                 }
                 if(i.status === 'approved' && canApprove){
                     html += ` <button class="btn warning transfer-issue-button" data-id="${i.id}" data-user-id="${i.issued_to_user_id || ''}">Transfer to:</button>`;
@@ -241,18 +246,8 @@
             load();
         });
 
-        function debounce(fn, wait){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
-
-        async function searchItems(q){
-            if(!q || q.trim().length<1) return [];
-            const res = await fetch('/inventory/items/search?q='+encodeURIComponent(q));
-            if(!res.ok) return [];
-            return await res.json();
-        }
-
-        const sugBox = document.getElementById('ci_suggestions');
         const searchInput = document.getElementById('ci_item_search');
-        let selectedItemClassification = '';
+        let selectedItemUsageType = '';
         const returnDateGroup = document.getElementById('ci_return_date_group');
         const returnDateInput = document.getElementById('ci_return_date');
         const requestedForInput = document.getElementById('ci_requested_for_at');
@@ -261,9 +256,9 @@
 
         function updateExpectedReturnVisibility(){
             if (!returnDateGroup) return;
-            const isConsumableIssue = selectedItemClassification.trim().toLowerCase() === 'consumable';
-            returnDateGroup.style.display = isConsumableIssue ? 'none' : 'block';
-            if (isConsumableIssue && returnDateInput) {
+            const noReturnExpected = selectedItemUsageType === 'issuance_only';
+            returnDateGroup.style.display = noReturnExpected ? 'none' : 'block';
+            if (noReturnExpected && returnDateInput) {
                 returnDateInput.value = '';
             }
         }
@@ -275,17 +270,16 @@
         }
         if (requestedForInput) setRequestedForDefault(requestedForInput);
 
-        if (searchInput && sugBox) {
-            async function renderSuggestions(q){
-                const items = await searchItems(q);
-                if(!items || items.length===0){ sugBox.style.display='none'; sugBox.innerHTML=''; return; }
-                sugBox.innerHTML = items.map(it=>`<div data-id="${it.id}" data-category="${escapeHtml(it.category || '')}" data-quantity="${Number(it.quantity) || 0}" style="padding:8px;border-bottom:1px solid #f0f0f0;cursor:${Number(it.quantity) > 0 ? 'pointer' : 'not-allowed'};${Number(it.quantity) > 0 ? '' : 'opacity:.6'}">${escapeHtml(it.name)} <span style="color:#666;font-size:12px">(${escapeHtml(it.sku||'')})</span> <span style="float:right;color:${Number(it.quantity) > 0 ? '#0b61d8' : '#b91c1c'}">${Number(it.quantity) > 0 ? `Available: ${Number(it.quantity)}` : 'Out of stock'}</span></div>`).join('');
-                sugBox.style.display='block';
-                Array.from(sugBox.children).forEach(ch=>{ ch.addEventListener('click', ()=>{ selectedItemQuantity = Number(ch.dataset.quantity) || 0; if(selectedItemQuantity <= 0){ document.getElementById('createMsg').textContent='This item is out of stock and cannot be requested.'; return; } document.getElementById('ci_item').value = ch.getAttribute('data-id'); searchInput.value = ch.textContent.trim(); selectedItemClassification = ch.dataset.category || ''; sugBox.style.display='none'; document.getElementById('createMsg').textContent=''; updateExpectedReturnVisibility(); }); });
-            }
-
-            searchInput.addEventListener('input', debounce((e)=>{ const v=e.target.value; document.getElementById('ci_item').value=''; selectedItemQuantity = null; selectedItemClassification = ''; updateExpectedReturnVisibility(); renderSuggestions(v); }, 250));
-            document.addEventListener('click', (ev)=>{ if(!ev.target.closest('#ci_suggestions') && ev.target !== searchInput) sugBox.style.display='none'; });
+        if (searchInput) {
+            searchInput.addEventListener('change', ()=>{
+                const selectedOption = searchInput.selectedOptions[0];
+                selectedItemQuantity = selectedOption?.value ? Number(selectedOption.dataset.quantity) || 0 : null;
+                selectedItemUsageType = selectedOption?.dataset.usageType || '';
+                document.getElementById('createMsg').textContent = selectedItemQuantity === 0
+                    ? 'This item is out of stock and cannot be requested.'
+                    : '';
+                updateExpectedReturnVisibility();
+            });
         }
 
         if (createIssueForm) {
@@ -294,12 +288,12 @@
                 const deptVal = document.getElementById('ci_dept').value || '';
                 const deptId = deptVal === '' ? null : (isNaN(Number(deptVal)) ? null : Number(deptVal));
                 const purpose = (document.getElementById('ci_purpose').value || '').trim();
-                const itemId = Number(document.getElementById('ci_item').value || 0);
+                const itemId = Number(searchInput.value || 0);
                 const requestedForAt = requestedForInput.value || null;
-                const isConsumableIssue = selectedItemClassification.trim().toLowerCase() === 'consumable';
-                const returnDate = isConsumableIssue ? null : (document.getElementById('ci_return_date').value || null);
+                const noReturnExpected = selectedItemUsageType === 'issuance_only';
+                const returnDate = noReturnExpected ? null : (document.getElementById('ci_return_date').value || null);
 
-                if(!itemId){ document.getElementById('createMsg').textContent='Please select an item from suggestions.'; return; }
+                if(!itemId){ document.getElementById('createMsg').textContent='Please select an item.'; return; }
                 if(selectedItemQuantity !== null && selectedItemQuantity <= 0){ document.getElementById('createMsg').textContent='This item is out of stock and cannot be requested.'; return; }
                 if(!purpose){ document.getElementById('createMsg').textContent='Please specify the purpose for this request.'; return; }
                 if(!deptId){ document.getElementById('createMsg').textContent='Please select your department.'; return; }
@@ -325,8 +319,9 @@
                     document.getElementById('createMsg').textContent = j && j.over_requested ? 'Requested, but exceeds available stock.' : 'Material issuance request created.';
                     document.getElementById('createIssueForm').reset();
                     setRequestedForDefault(requestedForInput);
-                    selectedItemClassification = '';
+                    selectedItemUsageType = '';
                     selectedItemQuantity = null;
+                    searchInput.value = '';
                     updateExpectedReturnVisibility();
                     load();
                 } else {
