@@ -273,17 +273,13 @@ class InventoryMonitoringController extends Controller
         return response()->json($items);
     }
 
-    public function generateQrImage(Request $request, $id)
+    public function generateQrImage($id)
     {
         $item = Item::findOrFail($id);
         $item->qr_code ??= 'VBIS-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(16));
         $item->save();
 
-        $action = $request->query('action');
         $query = ['code' => $item->qr_code];
-        if (in_array($action, ['borrow', 'return'], true)) {
-            $query['action'] = $action;
-        }
         $text = route('inventory.qr.item', ['id' => $item->id] + $query);
         $qrCode = new \Endroid\QrCode\QrCode(
             data: $text,
@@ -433,8 +429,9 @@ class InventoryMonitoringController extends Controller
             : null;
         $canBorrow = $user && ($user->isTeacher() || $user->isAdmin());
         $canManageReturns = $user && ($user->isAdmin() || $user->isPropertyCustodian());
+        $canReturn = $user && ($user->isTeacher() || $user->isAdmin() || $user->isPropertyCustodian());
 
-        return view('inventory.qr-item-information', compact('item', 'activeBorrows', 'action', 'canBorrow', 'canManageReturns'));
+        return view('inventory.qr-item-information', compact('item', 'activeBorrows', 'action', 'canBorrow', 'canManageReturns', 'canReturn'));
     }
 
     public function borrowQrInformation($id)

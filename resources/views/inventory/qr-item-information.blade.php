@@ -37,7 +37,6 @@
                     </div>
                 </div>
 
-                @if(!$action)
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h4 class="font-semibold mb-4">Item Details</h4>
@@ -76,6 +75,23 @@
                         @endif
                     </div>
                 </div>
+
+                @if($canBorrow || $canReturn)
+                    <section class="mt-6 border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-semibold mb-2">What would you like to do?</h4>
+                        <p class="mb-3 text-sm text-gray-600">Choose an action for this item.</p>
+                        <div class="flex flex-wrap gap-3">
+                            @if($canBorrow)
+                                <a href="{{ route('inventory.qr.item', ['id' => $item->id, 'action' => 'borrow']) }}" class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Borrow this item</a>
+                            @endif
+                            @if($canReturn)
+                                <a href="{{ route('inventory.qr.item', ['id' => $item->id, 'action' => 'return']) }}" class="inline-flex items-center rounded-md bg-green-700 px-4 py-2 text-white hover:bg-green-800">Return this item</a>
+                            @endif
+                            @if($action)
+                                <a href="{{ route('inventory.qr.item', $item->id) }}" class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Back to item info</a>
+                            @endif
+                        </div>
+                    </section>
                 @endif
 
                 @if($action === 'borrow' && $canBorrow)

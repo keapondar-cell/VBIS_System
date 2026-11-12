@@ -160,9 +160,10 @@ class Module3AccessTest extends TestCase
         $this->get('/inventory/qr/item/'.$item->id.'?action=borrow')
             ->assertOk()
             ->assertSee('Borrow '.$item->name)
-            ->assertDontSee('Item Details')
-            ->assertDontSee('QR Identifier')
-            ->assertDontSee('Recent History')
+            ->assertSee('Item Details')
+            ->assertSee('QR Identifier')
+            ->assertSee('Recent History')
+            ->assertSee('What would you like to do?')
             ->assertDontSee('Scan QR to Borrow')
             ->assertDontSee('Scan QR to Return')
             ->assertDontSee('Scan Again')
@@ -211,8 +212,9 @@ class Module3AccessTest extends TestCase
             ->get('/inventory/qr/item/'.$item->id.'?action=return')
             ->assertOk()
             ->assertSee('Return '.$item->name)
-            ->assertDontSee('Item Details')
-            ->assertDontSee('Recent History')
+            ->assertSee('Item Details')
+            ->assertSee('Recent History')
+            ->assertSee('What would you like to do?')
             ->assertDontSee('Scan Again')
             ->assertSee('Confirm Return');
 
@@ -233,19 +235,19 @@ class Module3AccessTest extends TestCase
         ]);
     }
 
-    public function test_item_qr_codes_include_item_info_borrow_and_return_options(): void
+    public function test_each_item_has_one_qr_code_that_opens_item_info_and_action_choices(): void
     {
         $custodian = User::factory()->create(['role' => 'property_custodian']);
         $item = Item::factory()->create(['name' => 'Lab Beaker']);
 
-        $this->actingAs($custodian)
+        $generatedQrPage = $this->actingAs($custodian)
             ->get('/inventory/qr/generate')
             ->assertOk()
-            ->assertSee('Item Info')
-            ->assertSee('Scan to Borrow')
-            ->assertSee('Scan to Return')
-            ->assertSee('action=borrow')
-            ->assertSee('action=return');
+            ->assertSee('one printable QR code')
+            ->assertSee('Scan for Item Info, Borrow or Return')
+            ->assertDontSee('Scan to Borrow')
+            ->assertDontSee('Scan to Return');
+        $this->assertSame(1, substr_count($generatedQrPage->getContent(), 'alt="QR code to view '.$item->name));
 
         $itemInfoQr = $this->get('/inventory/items/'.$item->id.'/qr-image');
         $borrowQr = $this->get('/inventory/items/'.$item->id.'/qr-image?action=borrow');
@@ -254,8 +256,16 @@ class Module3AccessTest extends TestCase
         $itemInfoQr->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
         $borrowQr->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
         $returnQr->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
-        $this->assertNotSame($itemInfoQr->getContent(), $borrowQr->getContent());
-        $this->assertNotSame($borrowQr->getContent(), $returnQr->getContent());
+        $this->assertSame($itemInfoQr->getContent(), $borrowQr->getContent());
+        $this->assertSame($itemInfoQr->getContent(), $returnQr->getContent());
+
+        $this->actingAs(User::factory()->create(['role' => 'teacher']))
+            ->get('/inventory/qr/item/'.$item->id)
+            ->assertOk()
+            ->assertSee('Item Details')
+            ->assertSee('What would you like to do?')
+            ->assertSee('Borrow this item')
+            ->assertSee('Return this item');
     }
 
     public function test_teacher_has_restricted_access_to_monitoring_and_audit_views(): void

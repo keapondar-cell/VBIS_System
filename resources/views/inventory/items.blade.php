@@ -278,8 +278,8 @@
 
     <div id="qrModal" style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000">
         <div class="qr-modal-content" style="background:#fff;padding:20px;border-radius:8px;text-align:center;max-width:760px;max-height:90vh;overflow-y:auto">
-            <h3>Item QR Codes</h3>
-            <div class="qr-options" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:15px 0"></div>
+            <h3>Item QR Code</h3>
+            <div class="qr-options" style="display:flex;justify-content:center;margin:15px 0"></div>
             <button class="qr-modal-close" style="background:#6c757d;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:15px" onclick="document.getElementById('qrModal').style.display='none'">Close</button>
         </div>
     </div>
@@ -410,37 +410,30 @@
     async function generateQR(id, itemName) {
         const qrModal = document.getElementById('qrModal');
         const options = qrModal.querySelector('.qr-options');
-        const qrTypes = [
-            {label: 'Item Info', action: null},
-            {label: 'Scan to Borrow', action: 'borrow'},
-            {label: 'Scan to Return', action: 'return'}
-        ];
+        const label = 'Scan for Item Info, Borrow or Return';
+        const imageUrl = '/inventory/items/'+id+'/qr-image';
         options.replaceChildren();
 
-        qrTypes.forEach(({label, action}) => {
-            const card = document.createElement('a');
-            const imageUrl = '/inventory/items/'+id+'/qr-image'+(action ? '?action='+encodeURIComponent(action) : '');
-            card.href = imageUrl;
-            card.target = '_blank';
-            card.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;border:1px solid #d8e5e8;border-radius:8px;color:#123b5d;text-decoration:none';
+        const card = document.createElement('a');
+        card.href = imageUrl;
+        card.target = '_blank';
+        card.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;border:1px solid #d8e5e8;border-radius:8px;color:#123b5d;text-decoration:none';
 
-            const image = document.createElement('img');
-            image.src = imageUrl;
-            image.alt = label+' QR code for '+itemName;
-            image.style.cssText = 'width:180px;max-width:100%;height:auto';
+        const image = document.createElement('img');
+        image.src = imageUrl;
+        image.alt = label+' QR code for '+itemName;
+        image.style.cssText = 'width:220px;max-width:100%;height:auto';
 
-            const title = document.createElement('strong');
-            title.textContent = label;
-            card.append(image, title);
-            options.appendChild(card);
-        });
+        const title = document.createElement('strong');
+        title.textContent = label;
+        card.append(image, title);
+        options.appendChild(card);
 
         try {
-            const imageUrls = qrTypes.map(({action}) => '/inventory/items/'+id+'/qr-image'+(action ? '?action='+encodeURIComponent(action) : ''));
-            const responses = await Promise.all(imageUrls.map(url => fetch(url, {headers: {'Accept': 'image/svg+xml'}})));
-            if (responses.some(response => !response.ok)) throw new Error('QR request failed');
+            const response = await fetch(imageUrl, {headers: {'Accept': 'image/svg+xml'}});
+            if (!response.ok) throw new Error('QR request failed');
 
-            qrModal.querySelector('h3').textContent = 'QR Codes for '+itemName;
+            qrModal.querySelector('h3').textContent = 'QR Code for '+itemName;
             qrModal.style.display = 'flex';
         } catch (error) {
             options.replaceChildren();
